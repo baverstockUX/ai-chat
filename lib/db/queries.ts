@@ -1,6 +1,6 @@
 import { db } from './index';
-import { user } from './schema';
-import { eq } from 'drizzle-orm';
+import { user, conversation, message } from './schema';
+import { eq, desc } from 'drizzle-orm';
 import { hash } from 'bcrypt-ts';
 
 /**
@@ -59,4 +59,115 @@ export async function createUser(email: string, password: string) {
     });
 
   return newUsers[0];
+}
+
+/**
+ * Create a new conversation for a user
+ * @param userId - User's UUID
+ * @param title - Conversation title
+ * @returns Created conversation object
+ */
+export async function createConversation(userId: string, title: string) {
+  const newConversations = await db
+    .insert(conversation)
+    .values({
+      userId,
+      title,
+    })
+    .returning();
+
+  return newConversations[0];
+}
+
+/**
+ * Fetch conversation by ID with user ownership check
+ * @param id - Conversation UUID
+ * @param userId - User's UUID (for ownership verification)
+ * @returns Conversation object or undefined if not found/not owned
+ */
+export async function getConversation(id: string, userId: string) {
+  const conversations = await db
+    .select()
+    .from(conversation)
+    .where(eq(conversation.id, id))
+    .limit(1);
+
+  const conv = conversations[0];
+
+  // Verify ownership
+  if (!conv || conv.userId !== userId) {
+    return undefined;
+  }
+
+  return conv;
+}
+
+/**
+ * Fetch all messages for a conversation
+ * @param conversationId - Conversation UUID
+ * @returns Array of messages ordered by creation time
+ */
+export async function getConversationMessages(conversationId: string) {
+  return await db
+    .select()
+    .from(message)
+    .where(eq(message.conversationId, conversationId))
+    .orderBy(message.createdAt);
+}
+
+/**
+ * Create a new message in a conversation
+ * @param conversationId - Conversation UUID
+ * @param role - Message role (user or assistant)
+ * @param content - Message content
+ * @returns Created message object
+ */
+export async function createMessage(
+  conversationId: string,
+  role: 'user' | 'assistant',
+  content: string
+) {
+  const newMessages = await db
+    .insert(message)
+    .values({
+      conversationId,
+      role,
+      content,
+    })
+    .returning();
+
+  return newMessages[0];
+}
+
+/**
+ * Generate a conversation title from the first message
+ * Truncates to 50 characters if longer
+ * @param firstMessage - The first user message
+ * @returns Generated title
+ */
+export function generateConversationTitle(firstMessage: string): string {
+  const cleaned = firstMessage.trim();
+  if (cleaned.length <= 50) {
+    return cleaned;
+  }
+  return cleaned.substring(0, 47) + '...';
+}
+
+/**
+ * Update conversation title
+ * @param conversationId - Conversation UUID
+ * @param title - New title
+ * @returns Updated conversation object
+ */
+export async function updateConversationTitle(
+  conversationId: string,
+  title: string
+) {
+  const updated = await db
+    .update(conversation)
+    .set({ title })
+    .where(eq(conversation.id, conversationId))
+    .returning();
+
+  return updated[0];
 }
