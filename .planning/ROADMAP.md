@@ -16,6 +16,18 @@ Six-phase roadmap building from foundation (chat + orchestration) → execution 
 
 **Requirements:** CHAT-01 through CHAT-10, AUTH-01 through AUTH-05 (15 requirements)
 
+**Plans:** 8 plans in 4 waves
+
+Plans:
+- [ ] 01-01-PLAN.md — Project setup, Next.js initialization, database schema
+- [ ] 01-02-PLAN.md — Authentication system with NextAuth and bcrypt
+- [ ] 01-03-PLAN.md — Streaming chat API with Google Gemini
+- [ ] 01-04-PLAN.md — Chat UI with message display and markdown rendering
+- [ ] 01-05-PLAN.md — Conversation management (CRUD operations)
+- [ ] 01-06-PLAN.md — Sidebar with conversation list and search
+- [ ] 01-07-PLAN.md — Keyboard shortcuts and mobile UI
+- [ ] 01-08-PLAN.md — Human verification checkpoint
+
 **Deliverables:**
 - Working chat interface with streaming AI responses
 - Markdown and code rendering with syntax highlighting
