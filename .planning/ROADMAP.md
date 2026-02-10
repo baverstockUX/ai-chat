@@ -8,7 +8,7 @@
 
 Six-phase roadmap building from foundation (chat + orchestration) → execution visibility → workflow persistence → deployment. Each phase delivers observable user value and builds toward the complete vision.
 
-## Phase 1: Chat Foundation & Authentication
+### Phase 1: Chat Foundation & Authentication
 
 **Goal:** Users can have natural conversations with AI in a persistent, professional chat interface.
 
@@ -43,7 +43,7 @@ Six-phase roadmap building from foundation (chat + orchestration) → execution 
 
 ---
 
-## Phase 2: AI Orchestration & Intent Detection
+### Phase 2: AI Orchestration & Intent Detection
 
 **Goal:** AI intelligently decides when to respond conversationally vs. summon an agent, establishing the core "magic" of the interface.
 
@@ -78,7 +78,7 @@ Six-phase roadmap building from foundation (chat + orchestration) → execution 
 
 ---
 
-## Phase 3: Agent Execution & Basic Visibility
+### Phase 3: Agent Execution & Basic Visibility
 
 **Goal:** System spawns opencode CLI agents and captures their output, surfacing execution status to users.
 
@@ -113,7 +113,7 @@ Six-phase roadmap building from foundation (chat + orchestration) → execution 
 
 ---
 
-## Phase 4: Dynamic Execution View
+### Phase 4: Dynamic Execution View
 
 **Goal:** Users see real-time visualization of agent execution (commands, file changes, tool calls) building trust through transparency.
 
@@ -146,7 +146,7 @@ Six-phase roadmap building from foundation (chat + orchestration) → execution 
 
 ---
 
-## Phase 5: Resources Management & Sharing
+### Phase 5: Resources Management & Sharing
 
 **Goal:** Users save successful agent workflows as Resources, browse them, share with colleagues, and fork shared workflows.
 
@@ -184,7 +184,7 @@ Six-phase roadmap building from foundation (chat + orchestration) → execution 
 
 ---
 
-## Phase 6: Polish & Deployment
+### Phase 6: Polish & Deployment
 
 **Goal:** Production-ready POC deployed for stakeholder demo and user testing.
 
