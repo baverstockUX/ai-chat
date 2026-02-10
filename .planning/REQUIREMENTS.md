@@ -131,17 +131,23 @@ Features explicitly excluded to maintain focus and avoid known pitfalls.
 
 ## Traceability
 
-Mapping of requirements to roadmap phases. Populated during roadmap creation.
+Mapping of requirements to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| *(Empty - will be filled by roadmapper)* | | |
+| CHAT-01 through CHAT-10 | Phase 1 | Pending |
+| AUTH-01 through AUTH-05 | Phase 1 | Pending |
+| ORCH-01 through ORCH-07 | Phase 2 | Pending |
+| EXEC-01, EXEC-02, EXEC-07, EXEC-08, EXEC-09, EXEC-10, EXEC-11 | Phase 3 | Pending |
+| EXEC-03, EXEC-04, EXEC-05, EXEC-06 | Phase 4 | Pending |
+| RES-01 through RES-12 | Phase 5 | Pending |
+| INPUT-01 through INPUT-06 | Phase 5 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 48 total
-- Mapped to phases: 0 (roadmap not yet created)
-- Unmapped: 48 ⚠️
+- Mapped to phases: 48
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2025-02-10*
-*Last updated: 2025-02-10 after initial definition*
+*Last updated: 2025-02-10 after roadmap creation*
