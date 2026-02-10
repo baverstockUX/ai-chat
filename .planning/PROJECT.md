@@ -8,6 +8,17 @@ A proof-of-concept AI chat interface that acts as an intelligent orchestrator fo
 
 Operations teams can build workflow automation through conversation - the AI understands their intent, orchestrates the building process, and delivers working solutions without requiring technical skills.
 
+## Current Milestone: v1.0 Full Orchestration
+
+**Goal:** Deliver complete end-to-end experience from conversation to collaborative automation - proving AI orchestration, dynamic agent visibility, and Resources management in one cohesive POC.
+
+**Target features:**
+- Conversational AI chat with image upload and web search
+- Intelligent orchestration that summons opencode agents when building is needed
+- Dynamic view showing real-time agent execution
+- Resources page where users save, view, share, and fork agent outputs
+- Persistent memory and adaptive AI behavior
+
 ## Requirements
 
 ### Validated
@@ -70,4 +81,4 @@ OneAdvanced AI is an existing enterprise platform positioned as "an intelligent 
 | Mocked data approach | Faster to demonstrate concept without integration dependencies | — Pending |
 
 ---
-*Last updated: 2025-02-10 after initialization*
+*Last updated: 2025-02-10 after milestone v1.0 start*
