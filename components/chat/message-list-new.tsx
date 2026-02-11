@@ -3,6 +3,7 @@
 import type { UIMessage } from '@ai-sdk/react';
 import { Conversation, ConversationContent } from '@/components/ai/conversation';
 import { Message } from '@/components/ai/message';
+import { MessageContent } from './message-content';
 import { Loader } from '@/components/ai/loader';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { isWithinTimeThreshold } from '@/lib/utils';
@@ -13,12 +14,17 @@ type SimpleMessage = {
   role: 'user' | 'assistant';
   content: string;
   createdAt: Date;
+  messageType?: 'text' | 'agent_request' | 'agent_progress' | 'agent_result';
+  metadata?: unknown;
 };
 
 interface MessageListProps {
   messages: UIMessage[] | SimpleMessage[];
   isLoading: boolean;
   onSuggestionSelect?: (text: string) => void;
+  conversationId?: string;
+  onApprove?: (messageId: string) => Promise<void>;
+  onCancel?: (messageId: string) => Promise<void>;
 }
 
 const SAMPLE_SUGGESTIONS = [
@@ -39,7 +45,14 @@ const SAMPLE_SUGGESTIONS = [
  * - Smooth auto-scroll
  * - Message grouping
  */
-export function MessageList({ messages, isLoading, onSuggestionSelect }: MessageListProps) {
+export function MessageList({
+  messages,
+  isLoading,
+  onSuggestionSelect,
+  conversationId,
+  onApprove,
+  onCancel,
+}: MessageListProps) {
   // Determine if message should be grouped with previous
   const shouldGroupWithPrevious = (currentIndex: number): boolean => {
     if (currentIndex === 0) return false;
@@ -88,13 +101,32 @@ export function MessageList({ messages, isLoading, onSuggestionSelect }: Message
         )}
 
         {/* Message list */}
-        {messages.map((message, index) => (
-          <Message
-            key={message.id}
-            message={message as UIMessage}
-            isGrouped={shouldGroupWithPrevious(index)}
-          />
-        ))}
+        {messages.map((message, index) => {
+          const simpleMessage = message as SimpleMessage;
+
+          // Use MessageContent for agent_request messages
+          if (simpleMessage.messageType === 'agent_request') {
+            return (
+              <div key={message.id} className="mb-4">
+                <MessageContent
+                  message={simpleMessage}
+                  conversationId={conversationId}
+                  onApprove={onApprove}
+                  onCancel={onCancel}
+                />
+              </div>
+            );
+          }
+
+          // Use existing Message component for text messages
+          return (
+            <Message
+              key={message.id}
+              message={message as UIMessage}
+              isGrouped={shouldGroupWithPrevious(index)}
+            />
+          );
+        })}
 
         {/* Loading indicator */}
         {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (

@@ -8,11 +8,22 @@ import { useRouter } from 'next/navigation';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import { useSidebarStore } from '@/lib/stores/sidebar-store';
 import { Menu } from 'lucide-react';
+import type { AgentRequestMetadata } from '@/lib/types/agent';
 
 // Serialized message type for client components (dates as strings)
 type SerializedMessage = Omit<DBMessage, 'createdAt'> & {
   createdAt: string | Date;
 };
+
+// Extended message type to support agent orchestration
+interface ExtendedMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: Date;
+  messageType?: 'text' | 'agent_request' | 'agent_progress' | 'agent_result';
+  metadata?: unknown;
+}
 
 interface ChatInterfaceProps {
   conversationId?: string;
@@ -40,12 +51,14 @@ export function ChatInterface({
   const router = useRouter();
   const isMobile = useMobile();
   const { toggle: toggleSidebar } = useSidebarStore();
-  const [messages, setMessages] = useState(
+  const [messages, setMessages] = useState<ExtendedMessage[]>(
     initialMessages.map((msg) => ({
       id: msg.id,
       role: msg.role,
       content: msg.content,
       createdAt: new Date(msg.createdAt),
+      messageType: msg.messageType || 'text',
+      metadata: msg.metadata,
     }))
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +106,7 @@ export function ChatInterface({
           signal: controller.signal,
         });
 
-        if (!response.ok || !response.body) {
+        if (!response.ok) {
           setIsLoading(false);
           return;
         }
@@ -103,14 +116,59 @@ export function ChatInterface({
           const newConversationId = response.headers.get('X-Conversation-Id');
           if (newConversationId) {
             newConversationIdRef.current = newConversationId;
-            // Don't redirect yet - wait for streaming to complete
+            // Don't redirect yet - wait for response to complete
           }
+        }
+
+        // Check if response is JSON (agent_request) or streaming (text)
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          // Handle agent_request JSON response
+          const data = await response.json();
+          if (data.type === 'agent_request' && data.message) {
+            const agentMessage: ExtendedMessage = {
+              id: data.message.id,
+              role: 'assistant',
+              content: data.message.content,
+              createdAt: new Date(data.message.createdAt),
+              messageType: 'agent_request',
+              metadata: data.message.metadata,
+            };
+            setMessages((prev) => [...prev, agentMessage]);
+          }
+
+          // Redirect after agent request if new conversation
+          if (!conversationId && newConversationIdRef.current) {
+            router.push(`/${newConversationIdRef.current}`);
+            newConversationIdRef.current = null;
+          }
+
+          setIsLoading(false);
+          return;
+        }
+
+        // Handle streaming response (text messages)
+        if (!response.body) {
+          setIsLoading(false);
+          return;
         }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let assistantText = '';
         let buffer = '';
+
+        // Create streaming message with temp ID
+        const streamingMessageId = crypto.randomUUID();
+        const streamingMessage = {
+          id: streamingMessageId,
+          role: 'assistant' as const,
+          content: '',
+          createdAt: new Date(),
+        };
+
+        // Add empty streaming message to state immediately
+        setMessages((prev) => [...prev, streamingMessage]);
 
         while (true) {
           const { done, value } = await reader.read();
@@ -134,6 +192,15 @@ export function ChatInterface({
 
               if (event.type === 'text-delta' && typeof event.delta === 'string') {
                 assistantText += event.delta;
+
+                // Update streaming message in state immediately
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === streamingMessageId
+                      ? { ...msg, content: assistantText }
+                      : msg
+                  )
+                );
               }
             } catch {
               // Ignore malformed lines
@@ -141,14 +208,15 @@ export function ChatInterface({
           }
         }
 
-        const assistantMessage = {
-          id: crypto.randomUUID(),
-          role: 'assistant' as const,
-          content: assistantText,
-          createdAt: new Date(),
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
+        // Streaming message already in state with final content
+        // Just ensure it has the final text (in case last chunk was missed)
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === streamingMessageId
+              ? { ...msg, content: assistantText }
+              : msg
+          )
+        );
 
         // Now redirect after streaming completes and messages are in local state
         if (!conversationId && newConversationIdRef.current) {
@@ -174,6 +242,49 @@ export function ChatInterface({
     }
   }, [initialPrompt, messages.length, handleSend]);
 
+  // Handle agent request approval
+  const handleApprove = useCallback(
+    async (messageId: string) => {
+      if (!conversationId) return;
+
+      try {
+        const response = await fetch('/api/agent/execute', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messageId,
+            conversationId,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to execute agent request');
+          return;
+        }
+
+        // Agent execution will be handled in Plan 02-05
+        // For now, just mark the request as approved
+        console.log('Agent request approved:', messageId);
+      } catch (error) {
+        console.error('Error approving agent request:', error);
+      }
+    },
+    [conversationId]
+  );
+
+  // Handle agent request cancellation
+  const handleCancel = useCallback(
+    async (messageId: string) => {
+      // Send a follow-up message asking for alternatives
+      const cancelMessage =
+        'I changed my mind. Can you suggest alternative approaches or help me in a different way?';
+      await handleSend(cancelMessage);
+    },
+    [handleSend]
+  );
+
   return (
     <div className="flex flex-col h-screen">
       {/* Mobile header */}
@@ -196,6 +307,9 @@ export function ChatInterface({
         messages={messages}
         isLoading={isLoading}
         onSuggestionSelect={handleSend}
+        conversationId={conversationId}
+        onApprove={handleApprove}
+        onCancel={handleCancel}
       />
       <MessageInput onSend={handleSend} disabled={isLoading} />
     </div>
