@@ -1,0 +1,5 @@
+[   13034ms] TypeError: Cannot destructure property 'response' of 'undefined' as it is undefined.
+    at Object.onFinish (http://localhost:3000/_next/static/chunks/code_ai-chat_components_f63c9ad3._.js:1015:36)
+    at Chat.onFinish (http://localhost:3000/_next/static/chunks/98dbc_%40ai-sdk_9f8eeb4b._.js:4356:86)
+    at Chat.makeRequest (http://localhost:3000/_next/static/chunks/98dbc_ai_dist_index_mjs_0f596cb3._.js:12283:60)
+    at async AbstractChat.sendMessage (http://localhost:3000/_next/static/chunks/98dbc_ai_dist_index_mjs_0f596cb3._.js:12020:13)

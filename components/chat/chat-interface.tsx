@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useMobile } from '@/lib/hooks/use-mobile';
 import { useSidebarStore } from '@/lib/stores/sidebar-store';
 import { Menu } from 'lucide-react';
+import { useRef } from 'react';
 
 interface ChatInterfaceProps {
   conversationId?: string;
@@ -34,6 +35,7 @@ export function ChatInterface({
   const router = useRouter();
   const isMobile = useMobile();
   const { setIsOpen } = useSidebarStore();
+  const newConversationIdRef = useRef<string | null>(null);
 
   const { messages, sendMessage, status, stop } = useChat({
     api: '/api/chat',
@@ -46,12 +48,20 @@ export function ChatInterface({
       createdAt: msg.createdAt,
     })),
     async onResponse(response) {
-      // For new conversations, get conversation ID from response and redirect
+      // For new conversations, capture the conversation ID from response headers
+      // We'll redirect after streaming completes in onFinish
       if (!conversationId) {
         const newConversationId = response.headers.get('X-Conversation-Id');
         if (newConversationId) {
-          router.push(`/${newConversationId}`);
+          newConversationIdRef.current = newConversationId;
         }
+      }
+    },
+    onFinish() {
+      // Redirect after streaming completes so the AI message displays properly
+      if (!conversationId && newConversationIdRef.current) {
+        router.push(`/${newConversationIdRef.current}`);
+        newConversationIdRef.current = null;
       }
     },
   });
