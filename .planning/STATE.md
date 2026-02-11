@@ -23,6 +23,7 @@ Progress: [███████░░░░░░] 10/13 plans (77%)
 | 01-08 | 48m 15s  | 7     | 7     |
 | 01-09 | 3m 20s   | 2     | 2     |
 | 01-13 | 5m 7s    | 4     | 5     |
+| Phase 01 P11 | 12m 21s | 1 tasks | 4 files |
 
 ## Decisions Made
 
@@ -113,8 +114,15 @@ Progress: [███████░░░░░░] 10/13 plans (77%)
 29. **Auto-send prompt on mount instead of pre-populating input** (01-13)
     - Rationale: Sample prompts suggest immediate action - user expects AI to start working immediately, not require extra click
 
-30. **useEffect with messages.length === 0 guard** (01-13)
+30. **Use window.addEventListener for keyboard shortcuts** (01-12)
+    - Rationale: More consistent event capture across browser environments compared to document.addEventListener
+
+31. **Add console telemetry for keyboard shortcut debugging** (01-12)
+    - Rationale: Helps diagnose component mounting and event listener registration issues that may occur in production
+
+32. **useEffect with messages.length === 0 guard** (01-13)
     - Rationale: Ensures prompt only sends once on mount, prevents duplicate sends if component re-renders
+- [Phase 01]: Use absolute positioning for toggle button instead of collapsed strip
 
 ## Accumulated Context
 
@@ -178,6 +186,9 @@ Progress: [███████░░░░░░] 10/13 plans (77%)
 - Comprehensive keyboard shortcuts with platform detection (Cmd/Ctrl)
 - Command palette (Cmd+K) with fuzzy search and categorized actions
 - Shortcuts: Cmd+N (new), Cmd+F (search), Cmd+B (toggle sidebar), Cmd+R (rename), Cmd+Shift+D (delete)
+- Stable event listener registration via window.addEventListener
+- Console telemetry for debugging component lifecycle and shortcut execution
+- Handler functions stabilized with useCallback for minimal re-renders
 - Mobile-optimized UI with viewport detection (768px breakpoint)
 - Mobile: Full-screen sidebar overlay, header with menu button, tap-friendly actions
 - Touch targets meet 44x44px minimum for accessibility
@@ -202,8 +213,8 @@ Progress: [███████░░░░░░] 10/13 plans (77%)
 
 ## Session Info
 
-Last session: 2026-02-11T11:29:41Z
-Stopped at: Completed 01-13-PLAN.md (Sample Prompt Auto-Send)
+Last session: 2026-02-11T11:33:24Z
+Stopped at: Completed 01-12-PLAN.md (Fix Keyboard Shortcuts Stability)
 
 ---
 *Last updated: 2026-02-11*
