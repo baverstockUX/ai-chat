@@ -1,6 +1,6 @@
 import { db } from './index';
-import { user, conversation, message } from './schema';
-import { eq, desc } from 'drizzle-orm';
+import { user, conversation, message, Conversation } from './schema';
+import { eq, desc, and } from 'drizzle-orm';
 import { hash } from 'bcrypt-ts';
 
 /**
@@ -167,6 +167,78 @@ export async function updateConversationTitle(
     .update(conversation)
     .set({ title })
     .where(eq(conversation.id, conversationId))
+    .returning();
+
+  return updated[0];
+}
+
+/**
+ * Fetch all conversations for a user
+ * Ordered by pinned status (pinned first), then by creation date (newest first)
+ * @param userId - User's UUID
+ * @returns Array of conversations ordered by pinned DESC, createdAt DESC
+ */
+export async function getUserConversations(userId: string) {
+  return await db
+    .select()
+    .from(conversation)
+    .where(eq(conversation.userId, userId))
+    .orderBy(desc(conversation.pinned), desc(conversation.createdAt));
+}
+
+/**
+ * Update conversation properties with user ownership check
+ * @param id - Conversation UUID
+ * @param userId - User's UUID (for ownership verification)
+ * @param data - Partial conversation data to update
+ * @returns Updated conversation object or undefined if not found/not owned
+ */
+export async function updateConversation(
+  id: string,
+  userId: string,
+  data: Partial<Conversation>
+) {
+  const updated = await db
+    .update(conversation)
+    .set(data)
+    .where(and(eq(conversation.id, id), eq(conversation.userId, userId)))
+    .returning();
+
+  return updated[0];
+}
+
+/**
+ * Delete conversation by ID with user ownership check
+ * Messages cascade delete automatically via foreign key constraint
+ * @param id - Conversation UUID
+ * @param userId - User's UUID (for ownership verification)
+ * @returns Deleted conversation object or undefined if not found/not owned
+ */
+export async function deleteConversationById(id: string, userId: string) {
+  const deleted = await db
+    .delete(conversation)
+    .where(and(eq(conversation.id, id), eq(conversation.userId, userId)))
+    .returning();
+
+  return deleted[0];
+}
+
+/**
+ * Toggle conversation pinned status with user ownership check
+ * @param id - Conversation UUID
+ * @param userId - User's UUID (for ownership verification)
+ * @param pinned - New pinned status
+ * @returns Updated conversation object or undefined if not found/not owned
+ */
+export async function pinConversation(
+  id: string,
+  userId: string,
+  pinned: boolean
+) {
+  const updated = await db
+    .update(conversation)
+    .set({ pinned })
+    .where(and(eq(conversation.id, id), eq(conversation.userId, userId)))
     .returning();
 
   return updated[0];
