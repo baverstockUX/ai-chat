@@ -1,46 +1,57 @@
 import { auth } from '@/app/(auth)/auth';
-import { NextResponse } from 'next/server';
+import { createStubAgent } from '@/lib/ai/agents/stub-agent';
 
-/**
- * POST /api/agent/execute - Agent execution endpoint (stub)
- *
- * Accepts approved agent requests and triggers execution.
- * Full implementation will be added in Plan 02-05.
- *
- * For now, returns success to prevent client errors when clicking Proceed.
- */
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
-  // Check authentication
   const session = await auth();
-
-  if (!session || !session.user?.id) {
+  if (!session?.user?.id) {
     return new Response('Unauthorized', { status: 401 });
   }
 
   try {
-    const body = await req.json();
-    const { messageId, conversationId } = body;
+    const { taskDescription } = await req.json();
 
-    // Validate request
-    if (!messageId || !conversationId) {
-      return new Response('Missing messageId or conversationId', { status: 400 });
-    }
+    // Create stub agent
+    const agent = createStubAgent();
 
-    // TODO (Plan 02-05): Implement agent execution logic
-    // - Retrieve agent request message and metadata
-    // - Execute requested actions
-    // - Stream progress updates
-    // - Save agent_result message
+    // Create Server-Sent Events stream
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
 
-    console.log('Agent execution requested:', { messageId, conversationId });
+        try {
+          // Stream mock progress updates
+          for await (const update of agent.execute(taskDescription)) {
+            const data = `data: ${JSON.stringify(update)}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          }
+        } catch (error) {
+          console.error('Agent execution error:', error);
+          const errorData = `data: ${JSON.stringify({
+            type: 'error',
+            timestamp: Date.now(),
+            content: 'Agent execution failed',
+          })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+        } finally {
+          controller.close();
+        }
+      },
+    });
 
-    // Return success for now
-    return NextResponse.json({
-      status: 'pending',
-      message: 'Agent execution will be implemented in Plan 02-05',
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
   } catch (error) {
-    console.error('Agent execution error:', error);
-    return new Response('Internal server error', { status: 500 });
+    console.error('API error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Failed to start agent execution',
+    }), { status: 500 });
   }
 }
