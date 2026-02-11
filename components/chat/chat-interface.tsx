@@ -59,7 +59,7 @@ export function ChatInterface({
   });
 
   const handleSend = (content: string) => {
-    sendMessage({ text: content });
+    sendMessage(content);
   };
 
   const isLoading = status === 'submitted' || status === 'streaming';
