@@ -7,8 +7,15 @@ import { Message } from './message';
 import { TypingIndicator } from './typing-indicator';
 import { isWithinTimeThreshold } from '@/lib/utils';
 
+type SimpleMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: Date;
+};
+
 interface MessageListProps {
-  messages: UIMessage[];
+  messages: UIMessage[] | SimpleMessage[];
   isLoading: boolean;
 }
 
@@ -61,7 +68,9 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
           {messages.map((message, index) => (
             <Message
               key={message.id}
-              message={message}
+              // Message component gracefully handles both UIMessage (with parts)
+              // and SimpleMessage (with content) shapes
+              message={message as UIMessage}
               isGrouped={shouldGroupWithPrevious(index)}
             />
           ))}
