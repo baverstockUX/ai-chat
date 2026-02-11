@@ -26,11 +26,8 @@ export function Message({ message, isGrouped = false }: MessageProps) {
   const isMobile = useMobile();
   const isUser = message.role === 'user';
 
-  // Extract text content from message parts
-  const textContent = message.parts
-    .filter((part) => part.type === 'text')
-    .map((part) => (part as { type: 'text'; text: string }).text)
-    .join('');
+  // Get text content from message
+  const textContent = message.content;
 
   // Get user initials for avatar (using first letter for now)
   const userInitial = 'U';
