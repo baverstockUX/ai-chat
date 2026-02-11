@@ -18,6 +18,7 @@ interface ChatInterfaceProps {
   conversationId?: string;
   initialMessages?: SerializedMessage[];
   conversationTitle?: string;
+  initialPrompt?: string;
 }
 
 /**
