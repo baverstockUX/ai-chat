@@ -34,11 +34,8 @@ export function ConversationList({ conversations, searchQuery }: ConversationLis
   const handleSamplePrompt = (prompt: string) => {
     startTransition(async () => {
       try {
-        // This will be handled by the chat interface after redirect
-        // For now, just create a new conversation
-        await createConversation();
-        // The user will need to type the prompt after redirect
-        // In a future enhancement, we could pass the prompt as a query param
+        // Pass prompt to server action - it will redirect with prompt in URL
+        await createConversation(prompt);
       } catch (error) {
         toast.error('Failed to create conversation');
         console.error(error);
