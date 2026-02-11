@@ -68,6 +68,15 @@ Plans:
 
 **Requirements:** ORCH-01 through ORCH-07 (7 requirements)
 
+**Plans:** 5 plans in 3 waves
+
+Plans:
+- [ ] 02-01-PLAN.md — Database schema for orchestration (message types, context memory)
+- [ ] 02-02-PLAN.md — Intent classification system with structured output
+- [ ] 02-03-PLAN.md — Agent confirmation UI with Proceed/Cancel
+- [ ] 02-04-PLAN.md — Context memory system for cross-session adaptation
+- [ ] 02-05-PLAN.md — Agent execution with file operations and commands (checkpoint)
+
 **Deliverables:**
 - Intent classification system (chat vs build detection)
 - Agent summoning logic with context injection
