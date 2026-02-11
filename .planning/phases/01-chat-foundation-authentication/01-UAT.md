@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 01-chat-foundation-authentication
 source: [01-02-SUMMARY.md, 01-03-SUMMARY.md, 01-04-SUMMARY.md, 01-05-SUMMARY.md, 01-06-SUMMARY.md, 01-07-SUMMARY.md, 01-08-SUMMARY.md]
 started: 2026-02-11T10:32:41Z
-updated: 2026-02-11T10:48:15Z
+updated: 2026-02-11T11:15:00Z
 ---
 
 ## Current Test
@@ -123,61 +123,136 @@ skipped: 0
   reason: "User reported: does timestamp every time"
   severity: major
   test: 7
-  artifacts: []
-  missing: []
+  root_cause: "Line 49 of message-list.tsx passes `new Date()` twice to isWithinTimeThreshold() instead of actual message timestamps, causing time threshold check to always return true (0 minute difference)"
+  artifacts:
+    - path: "components/chat/message-list.tsx"
+      issue: "Line 49 incorrectly passes current time instead of message timestamps"
+  missing:
+    - "Replace new Date(), new Date() with previousMessage.createdAt, currentMessage.createdAt"
+  debug_session: ".planning/debug/timestamp-every-message-issue.md"
 
 - truth: "New conversation created automatically on first message with conversation title generated from first message"
   status: failed
   reason: "User reported: toash comes up saying 'Failed to save conversation' even though a new conversation is created and it works. However, it doesnt name the conversation automatically according to the first message."
   severity: major
   test: 8
-  artifacts: []
-  missing: []
+  root_cause: "Two issues: (1) Server actions use redirect() which throws NEXT_REDIRECT error caught by client try/catch as failure, (2) Title generation runs async in onFinish callback creating race condition where redirect happens before title update completes"
+  artifacts:
+    - path: "components/sidebar/conversation-list.tsx"
+      issue: "Catches redirect error, shows false 'Failed to create' toast"
+    - path: "components/sidebar/sidebar-header.tsx"
+      issue: "Catches redirect error, shows false 'Failed to create' toast"
+    - path: "app/api/chat/route.ts"
+      issue: "Title generation in onFinish callback (lines 82-86) timing issue"
+    - path: "components/chat/chat-interface.tsx"
+      issue: "Redirects immediately (line 152) before title update completes"
+  missing:
+    - "Check error type before showing toast - filter out NEXT_REDIRECT errors"
+    - "Fix title generation timing: wait for onFinish or return title in headers"
+  debug_session: ".planning/debug/conversation-persistence-title-error.md"
 
 - truth: "Click 'New Conversation' button navigates to fresh conversation without error messages"
   status: failed
   reason: "User reported: As describes in previous test, says Failed to create conversation, even though it seems to work"
   severity: major
   test: 9
-  artifacts: []
-  missing: []
+  root_cause: "Next.js redirect() throws NEXT_REDIRECT error that client try/catch blocks catch and display as failure toast, even though conversation created successfully"
+  artifacts:
+    - path: "components/sidebar/sidebar-header.tsx"
+      issue: "Catches redirect error as exception (lines 17-26)"
+    - path: "components/sidebar/conversation-list.tsx"
+      issue: "Same issue in sample prompt handler (lines 34-47)"
+    - path: "app/(chat)/actions.ts"
+      issue: "Server action calls redirect() which throws (line 24)"
+  missing:
+    - "Remove try/catch around server actions that redirect, or check error type before showing toast"
+  debug_session: ".planning/debug/new-conversation-error-toast.md"
 
 - truth: "Delete conversation removes it from sidebar without showing error messages"
   status: failed
   reason: "User reported: Toast says 'Failed to delete conversation' but it does it!"
   severity: major
   test: 14
-  artifacts: []
-  missing: []
+  root_cause: "Next.js redirect() throws NEXT_REDIRECT error caught by client try/catch as failure, even though deletion succeeded"
+  artifacts:
+    - path: "components/chat/delete-conversation-dialog.tsx"
+      issue: "Lines 35-47 incorrectly treats redirect errors as deletion failures"
+    - path: "app/(chat)/actions.ts"
+      issue: "Lines 57-69 server action uses redirect() which throws by design"
+  missing:
+    - "Remove try/catch or check if error is NEXT_REDIRECT before showing toast"
+  debug_session: ".planning/debug/delete-conversation-error-toast.md"
 
 - truth: "Sidebar can collapse and reopen via button"
   status: failed
   reason: "User reported: Able to collapse, but then the button disappears, no way to bring it back!"
   severity: major
   test: 15
-  artifacts: []
-  missing: []
+  root_cause: "Toggle button rendered inside conditionally rendered sidebar content. When collapsed, isOpen becomes false and entire content block including toggle button is removed from DOM"
+  artifacts:
+    - path: "components/sidebar/conversation-sidebar.tsx"
+      issue: "Lines 88-113 conditional rendering removes all content including toggle button when isOpen=false"
+    - path: "components/sidebar/sidebar-header.tsx"
+      issue: "Lines 43-54 toggle button lives inside conditionally rendered content"
+  missing:
+    - "Extract toggle button from conditional rendering so it remains visible when collapsed"
+    - "Options: render button outside sidebar, position absolutely when collapsed, or keep minimal visible strip"
+  debug_session: ".planning/debug/sidebar-collapse-button-disappears.md"
 
 - truth: "Keyboard shortcuts execute app actions without triggering browser defaults"
   status: failed
   reason: "User reported: none of these work. Cmd N opens new browser window. Cant open the sidebar. Cant see if search works as cant open sidebar."
   severity: major
   test: 17
-  artifacts: []
-  missing: []
+  root_cause: "KeyboardHandler component never mounts or event listener never registers. Component returns null with no telemetry. useEffect has 10 dependencies causing frequent listener re-registration, plus TypeScript error in layout.tsx"
+  artifacts:
+    - path: "components/keyboard-shortcuts/keyboard-handler.tsx"
+      issue: "Returns null, no telemetry to verify mounting; useEffect dependencies cause frequent re-registration"
+    - path: "components/keyboard-shortcuts/keyboard-layout.tsx"
+      issue: "Handlers recreated on navigation, triggering KeyboardHandler re-mount cycle"
+    - path: "app/(chat)/layout.tsx"
+      issue: "TypeScript error on line 25 (session.user.id could be undefined)"
+  missing:
+    - "Add telemetry to verify component mounts"
+    - "Stabilize handler references (useCallback with empty deps or useEvent pattern)"
+    - "Fix TypeScript error in layout.tsx"
+    - "Add visual indicator that shortcuts are active"
+  debug_session: ".planning/debug/keyboard-shortcuts-not-working.md"
 
 - truth: "Mobile sidebar can open and close via menu button"
   status: failed
   reason: "User reported: Works on mobile, can open sidebar, cant collapse it."
   severity: major
   test: 18
-  artifacts: []
-  missing: []
+  root_cause: "Mobile menu button in chat-interface.tsx only calls open() instead of toggle(), making button unidirectional (can only open, never close)"
+  artifacts:
+    - path: "components/chat/chat-interface.tsx"
+      issue: "Line 40 imports only open(), line 173 uses onClick={open} instead of toggle"
+  missing:
+    - "Change mobile menu button to use toggle() instead of open()"
+    - "Line 40: Change const { open } to const { toggle }"
+    - "Line 173: Change onClick={open} to onClick={toggle}"
+  debug_session: ".planning/debug/mobile-sidebar-cannot-close.md"
 
 - truth: "Sample prompts populate or send message when clicked"
   status: failed
   reason: "User reported: Create a new conversation but nothing happens, the prompt sample is lost"
   severity: major
   test: 20
-  artifacts: []
-  missing: []
+  root_cause: "handleSamplePrompt function only creates conversation and redirects, discarding the prompt text. No mechanism to pass prompt through navigation flow to chat interface"
+  artifacts:
+    - path: "components/sidebar/conversation-list.tsx"
+      issue: "Lines 34-47 handleSamplePrompt discards prompt parameter, only creates conversation"
+    - path: "app/(chat)/actions.ts"
+      issue: "Lines 12-25 createConversation() has no parameter for initial prompt text"
+    - path: "app/(chat)/page.tsx"
+      issue: "Needs to read prompt from URL query param and pass to ChatInterface"
+    - path: "components/chat/chat-interface.tsx"
+      issue: "Needs to accept initial prompt and either populate input or auto-send"
+    - path: "components/chat/message-input.tsx"
+      issue: "May need method to set initial input value externally"
+  missing:
+    - "Pass prompt text via URL query parameter"
+    - "Read query param in page.tsx and pass to ChatInterface as prop"
+    - "ChatInterface either pre-populate input or auto-send prompt as first message"
+  debug_session: ".planning/debug/empty-state-sample-prompts.md"
