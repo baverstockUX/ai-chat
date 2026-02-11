@@ -23,14 +23,14 @@ interface ConversationSidebarProps {
 }
 
 export function ConversationSidebar({ conversations, userEmail }: ConversationSidebarProps) {
-  const { isOpen, setIsOpen } = useSidebarStore();
+  const { isOpen, close } = useSidebarStore();
   const isMobile = useMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>(conversations);
 
   const handleClose = () => {
     if (isMobile) {
-      setIsOpen(false);
+      close();
     }
   };
 
@@ -97,7 +97,7 @@ export function ConversationSidebar({ conversations, userEmail }: ConversationSi
     >
       {isOpen && (
         <div className="flex flex-col h-full overflow-hidden">
-          <SidebarHeader />
+          <SidebarHeader showToggle={false} />
           <ConversationSearch
             onSearchChange={setSearchQuery}
             onFilteredResults={setFilteredConversations}

@@ -11,7 +11,11 @@ import { isRedirectError } from '@/lib/utils';
  * Sidebar header component
  * Contains new conversation button and collapse toggle
  */
-export function SidebarHeader() {
+interface SidebarHeaderProps {
+  showToggle?: boolean;
+}
+
+export function SidebarHeader({ showToggle = true }: SidebarHeaderProps = {}) {
   const { isOpen, toggle } = useSidebarStore();
   const [isPending, startTransition] = useTransition();
 
@@ -22,10 +26,10 @@ export function SidebarHeader() {
       } catch (error) {
         // Ignore redirect errors (successful navigation)
         if (isRedirectError(error)) {
-          return
+          return;
         }
-        console.error('Failed to create conversation:', error)
-        toast.error('Failed to create conversation')
+        console.error('Failed to create conversation:', error);
+        toast.error('Failed to create conversation');
       }
     });
   };
@@ -45,18 +49,20 @@ export function SidebarHeader() {
         >
           <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         </button>
-        <button
-          onClick={toggle}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-          title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        >
-          {isOpen ? (
-            <PanelLeftClose className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          ) : (
-            <PanelLeftOpen className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          )}
-        </button>
+        {showToggle && (
+          <button
+            onClick={toggle}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            {isOpen ? (
+              <PanelLeftClose className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            ) : (
+              <PanelLeftOpen className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
