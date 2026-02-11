@@ -1,6 +1,6 @@
 import { db } from './index';
 import { user, conversation, message, Conversation } from './schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, or, ilike } from 'drizzle-orm';
 import { hash } from 'bcrypt-ts';
 
 /**
@@ -184,6 +184,67 @@ export async function getUserConversations(userId: string) {
     .from(conversation)
     .where(eq(conversation.userId, userId))
     .orderBy(desc(conversation.pinned), desc(conversation.createdAt));
+}
+
+/**
+ * Search conversations by title or message content
+ * @param userId - User's UUID
+ * @param query - Search query string
+ * @returns Array of matching conversations with pinned first
+ */
+export async function searchConversations(userId: string, query: string) {
+  // If query is empty, return all conversations
+  if (!query.trim()) {
+    return getUserConversations(userId);
+  }
+
+  // Search in conversation titles
+  const conversationsWithMessages = await db
+    .select({
+      conversation: conversation,
+    })
+    .from(conversation)
+    .where(
+      and(
+        eq(conversation.userId, userId),
+        ilike(conversation.title, `%${query}%`)
+      )
+    )
+    .orderBy(desc(conversation.pinned), desc(conversation.createdAt));
+
+  // Also search in message content
+  const conversationsFromMessages = await db
+    .selectDistinct({
+      conversation: conversation,
+    })
+    .from(message)
+    .innerJoin(conversation, eq(message.conversationId, conversation.id))
+    .where(
+      and(
+        eq(conversation.userId, userId),
+        ilike(message.content, `%${query}%`)
+      )
+    )
+    .orderBy(desc(conversation.pinned), desc(conversation.createdAt));
+
+  // Combine and deduplicate results
+  const allResults = [
+    ...conversationsWithMessages.map((r) => r.conversation),
+    ...conversationsFromMessages.map((r) => r.conversation),
+  ];
+
+  // Deduplicate by conversation ID
+  const uniqueResults = Array.from(
+    new Map(allResults.map((conv) => [conv.id, conv])).values()
+  );
+
+  // Re-sort by pinned and createdAt
+  return uniqueResults.sort((a, b) => {
+    if (a.pinned !== b.pinned) {
+      return a.pinned ? -1 : 1;
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 }
 
 /**
