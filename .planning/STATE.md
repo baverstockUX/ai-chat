@@ -5,7 +5,7 @@
 Phase: Phase 2 — AI Orchestration & Intent Detection (02)
 Plan: 1/5 completed
 Status: In Progress
-Last activity: 2026-02-11 — Completed 02-02 (Prompt-Based Intent Classification)
+Last activity: 2026-02-11 — Completed 02-01 (Database Schema Extension)
 
 Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 
@@ -24,6 +24,7 @@ Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 | 01-09 | 3m 20s   | 2     | 2     |
 | 01-11 | 17m 31s  | 1     | 4     |
 | 01-13 | 5m 7s    | 4     | 5     |
+| 02-01 | 3m 33s   | 3     | 3     |
 | 02-02 | 2m 52s   | 3     | 5     |
 
 ## Decisions Made
@@ -127,6 +128,15 @@ Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 33. **Use absolute positioning for toggle button** (01-11)
     - Rationale: Simplest solution that works across both open and collapsed states without maintaining collapsed strip width
 
+34. **Use JSONB for message metadata instead of separate columns** (02-01)
+    - Rationale: Different message types need different metadata structures. JSONB provides flexibility without schema changes.
+
+35. **Store context with upsert pattern (conversationId + contextKey as conflict target)** (02-01)
+    - Rationale: Enables updating context as it evolves. Prevents duplicate context entries per conversation.
+
+36. **Include contextType field for efficient filtering** (02-01)
+    - Rationale: Allows loading only specific context types without scanning all context entries.
+
 34. **Use AI SDK Output.object() for structured responses** (02-02)
     - Rationale: Leverages Gemini's native structured output with Zod validation for type-safe intent detection
 
@@ -223,10 +233,18 @@ Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 - Enables zero-friction start for new users
 - Sample prompts: "Help me automate a workflow", "Analyze this data", "Explain a complex concept", "Review my code"
 
+**Agent Orchestration Database Schema (02-01):**
+- Message table extended with messageType (text, agent_request, agent_progress, agent_result) and metadata (JSONB)
+- conversationContext table for cross-session memory with contextType, contextKey, contextValue fields
+- Context storage functions: storeContext (with upsert), retrieveContext, retrieveContextByType
+- JSONB storage pattern enables flexible metadata structures for different agent message types
+- Foreign key cascade delete ensures context cleanup when conversations deleted
+- Database ready for agent orchestration implementation
+
 ## Session Info
 
-Last session: 2026-02-11T15:02:22Z
-Stopped at: Completed 02-02-PLAN.md (Prompt-Based Intent Classification)
+Last session: 2026-02-11T15:03:02Z
+Stopped at: Completed 02-01-PLAN.md (Database Schema Extension)
 
 ---
 *Last updated: 2026-02-11*
