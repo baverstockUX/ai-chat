@@ -18,6 +18,7 @@ interface ChatInterfaceProps {
   conversationId?: string;
   initialMessages?: SerializedMessage[];
   conversationTitle?: string;
+  initialPrompt?: string;
 }
 
 /**
@@ -34,10 +35,11 @@ export function ChatInterface({
   conversationId,
   initialMessages = [],
   conversationTitle = 'New Conversation',
+  initialPrompt,
 }: ChatInterfaceProps) {
   const router = useRouter();
   const isMobile = useMobile();
-  const { open } = useSidebarStore();
+  const { toggle: toggleSidebar } = useSidebarStore();
   const [messages, setMessages] = useState(
     initialMessages.map((msg) => ({
       id: msg.id,
@@ -164,13 +166,21 @@ export function ChatInterface({
     [conversationId, isLoading, messages, router]
   );
 
+  // Auto-send initial prompt (e.g., from sample prompt click)
+  useEffect(() => {
+    if (initialPrompt && messages.length === 0) {
+      console.log('[ChatInterface] Auto-sending initial prompt:', initialPrompt);
+      handleSend(initialPrompt);
+    }
+  }, [initialPrompt, messages.length, handleSend]);
+
   return (
     <div className="flex flex-col h-screen">
       {/* Mobile header */}
       {isMobile && (
         <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 md:hidden">
           <button
-            onClick={open}
+            onClick={toggle}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             aria-label="Open menu"
           >
