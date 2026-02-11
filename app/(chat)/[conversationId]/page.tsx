@@ -25,10 +25,16 @@ export default async function ConversationPage({
   // Fetch all messages for this conversation
   const messages = await getConversationMessages(conversationId);
 
+  // Serialize dates for client component (Next.js App Router requirement)
+  const serializedMessages = messages.map((msg) => ({
+    ...msg,
+    createdAt: msg.createdAt.toISOString(),
+  }));
+
   return (
     <ChatInterface
       conversationId={conversationId}
-      initialMessages={messages}
+      initialMessages={serializedMessages}
       conversationTitle={conversation.title}
     />
   );

@@ -11,9 +11,14 @@ import { useSidebarStore } from '@/lib/stores/sidebar-store';
 import { Menu } from 'lucide-react';
 import { useRef } from 'react';
 
+// Serialized message type for client components (dates as strings)
+type SerializedMessage = Omit<DBMessage, 'createdAt'> & {
+  createdAt: string | Date;
+};
+
 interface ChatInterfaceProps {
   conversationId?: string;
-  initialMessages?: DBMessage[];
+  initialMessages?: SerializedMessage[];
   conversationTitle?: string;
 }
 
@@ -40,12 +45,12 @@ export function ChatInterface({
   const { messages, sendMessage, status, stop } = useChat({
     api: '/api/chat',
     body: { conversationId },
-    // Convert DB messages to AI SDK format
-    initialMessages: initialMessages.map((msg) => ({
+    // Convert DB messages to AI SDK format - use 'messages' not 'initialMessages'
+    messages: initialMessages.map((msg) => ({
       id: msg.id,
       role: msg.role,
       content: msg.content,
-      createdAt: msg.createdAt,
+      createdAt: new Date(msg.createdAt),
     })),
     async onResponse(response) {
       // For new conversations, capture the conversation ID from response headers
