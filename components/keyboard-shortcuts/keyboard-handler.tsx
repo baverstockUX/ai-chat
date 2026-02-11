@@ -67,10 +67,19 @@ export function KeyboardHandler({
     );
   }, []);
 
+  // Component mount telemetry
   useEffect(() => {
+    console.log('[KeyboardHandler] Component mounted');
+    return () => console.log('[KeyboardHandler] Component unmounted');
+  }, []);
+
+  useEffect(() => {
+    console.log('[KeyboardHandler] Registering event listener');
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl + K: Open command palette
       if (isModifierKey(e) && e.key === 'k') {
+        console.log('[KeyboardHandler] Shortcut matched: Cmd/Ctrl+K (Command Palette)');
         e.preventDefault();
         onOpenCommandPalette();
         return;
@@ -78,6 +87,7 @@ export function KeyboardHandler({
 
       // Cmd/Ctrl + N: New conversation
       if (isModifierKey(e) && e.key === 'n' && !shouldIgnoreShortcut(e)) {
+        console.log('[KeyboardHandler] Shortcut matched: Cmd/Ctrl+N (New Conversation)');
         e.preventDefault();
         onNewConversation();
         return;
@@ -85,6 +95,7 @@ export function KeyboardHandler({
 
       // Cmd/Ctrl + F: Focus search
       if (isModifierKey(e) && e.key === 'f' && !shouldIgnoreShortcut(e)) {
+        console.log('[KeyboardHandler] Shortcut matched: Cmd/Ctrl+F (Focus Search)');
         e.preventDefault();
         onFocusSearch();
         return;
@@ -92,6 +103,7 @@ export function KeyboardHandler({
 
       // Cmd/Ctrl + B: Toggle sidebar
       if (isModifierKey(e) && e.key === 'b' && !shouldIgnoreShortcut(e)) {
+        console.log('[KeyboardHandler] Shortcut matched: Cmd/Ctrl+B (Toggle Sidebar)');
         e.preventDefault();
         toggle();
         return;
@@ -106,6 +118,7 @@ export function KeyboardHandler({
         conversationId &&
         onDeleteConversation
       ) {
+        console.log('[KeyboardHandler] Shortcut matched: Cmd/Ctrl+Shift+D (Delete Conversation)');
         e.preventDefault();
         onDeleteConversation();
         return;
@@ -119,6 +132,7 @@ export function KeyboardHandler({
         conversationId &&
         onRenameConversation
       ) {
+        console.log('[KeyboardHandler] Shortcut matched: Cmd/Ctrl+R (Rename Conversation)');
         e.preventDefault();
         onRenameConversation();
         return;
@@ -134,12 +148,14 @@ export function KeyboardHandler({
       }
     };
 
-    // Add event listener
-    document.addEventListener('keydown', handleKeyDown);
+    // Add event listener to window (not document)
+    window.addEventListener('keydown', handleKeyDown);
+    console.log('[KeyboardHandler] Event listener registered');
 
     // Cleanup
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown);
+      console.log('[KeyboardHandler] Event listener removed');
     };
   }, [
     conversationId,
