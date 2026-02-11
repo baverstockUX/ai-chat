@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 2 — AI Orchestration & Intent Detection (02)
-Plan: 1/5 completed
+Plan: 4/5 completed
 Status: In Progress
-Last activity: 2026-02-11 — Completed 02-01 (Database Schema Extension)
+Last activity: 2026-02-11 — Completed 02-04 (Cross-Session Context Memory)
 
-Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
+Progress: [████████░░░░░] 4/5 plans (80%)
 
 ## Performance Metrics
 
@@ -26,6 +26,7 @@ Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 | 01-13 | 5m 7s    | 4     | 5     |
 | 02-01 | 3m 33s   | 3     | 3     |
 | 02-02 | 2m 52s   | 3     | 5     |
+| 02-04 | 1m 58s   | 3     | 4     |
 
 ## Decisions Made
 
@@ -146,6 +147,21 @@ Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 36. **Save user message before intent detection response** (02-02)
     - Rationale: Ensures message persistence even if user cancels agent request
 
+37. **Use AI-powered extraction instead of regex patterns for domain knowledge** (02-04)
+    - Rationale: Handles natural language variations, identifies implicit context, extracts structured data, more maintainable than extensive regex rule sets
+
+38. **Set confidence threshold at 0.7 to prevent false positives** (02-04)
+    - Rationale: Ensures stored context is meaningful and actionable, prevents clutter from ambiguous mentions
+
+39. **Process last 10 messages to respect token limits** (02-04)
+    - Rationale: Recent messages more relevant for current context, reduces extraction latency, user-specified requirement
+
+40. **Inject context directly into system prompt rather than separate message** (02-04)
+    - Rationale: Simpler than managing separate context message, ensures context always visible to model, standard pattern for prompt augmentation
+
+41. **Non-blocking context extraction (errors don't fail chat response)** (02-04)
+    - Rationale: Chat functionality more critical than context storage, user receives response even if extraction fails
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -241,10 +257,21 @@ Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 - Foreign key cascade delete ensures context cleanup when conversations deleted
 - Database ready for agent orchestration implementation
 
+**Cross-Session Context Memory (02-04):**
+- AI-powered context extraction using Gemini structured output with Zod validation
+- Context types: domain, preference, project, technology
+- Confidence threshold (>0.7) prevents false positives
+- Last 10 messages processed to respect token limits
+- formatContextForPrompt() converts stored context to prompt-ready format
+- Context loaded at conversation start and injected into system prompt
+- Non-blocking extraction after AI responses (errors don't fail chat)
+- Cross-session memory (ORCH-06) and domain adaptation (ORCH-07) implemented
+- AI remembers user's tech stack, terminology, and project details across sessions
+
 ## Session Info
 
-Last session: 2026-02-11T15:03:02Z
-Stopped at: Completed 02-01-PLAN.md (Database Schema Extension)
+Last session: 2026-02-11T15:07:34Z
+Stopped at: Completed 02-04-PLAN.md (Cross-Session Context Memory)
 
 ---
 *Last updated: 2026-02-11*
