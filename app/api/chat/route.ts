@@ -91,7 +91,12 @@ export async function POST(req: Request) {
     });
 
     // Return streaming response with proper SSE headers
-    return result.toDataStreamResponse();
+    // Include conversation ID in headers for client-side redirect
+    const response = result.toTextStreamResponse();
+    if (!conversationId && activeConversationId) {
+      response.headers.set('X-Conversation-Id', activeConversationId);
+    }
+    return response;
   } catch (error) {
     console.error('Chat API error:', error);
     return new Response('Internal server error', { status: 500 });
