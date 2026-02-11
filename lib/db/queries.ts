@@ -382,3 +382,29 @@ export async function retrieveContextByType(
     )
     .orderBy(desc(conversationContext.updatedAt));
 }
+
+/**
+ * Format conversation context for system prompt injection
+ * Converts context entries into readable text format for AI awareness
+ * @param conversationId - Conversation UUID
+ * @returns Formatted context string ready for prompt injection
+ */
+export async function formatContextForPrompt(conversationId: string): Promise<string> {
+  const contexts = await retrieveContext(conversationId);
+
+  if (contexts.length === 0) {
+    return '';
+  }
+
+  const grouped = contexts.reduce((acc, ctx) => {
+    if (!acc[ctx.contextType]) acc[ctx.contextType] = [];
+    acc[ctx.contextType].push(`${ctx.contextKey}: ${JSON.stringify(ctx.contextValue)}`);
+    return acc;
+  }, {} as Record<string, string[]>);
+
+  const sections = Object.entries(grouped).map(
+    ([type, items]) => `${type.toUpperCase()}:\n${items.join('\n')}`
+  );
+
+  return `\n\nUSER CONTEXT:\n${sections.join('\n\n')}`;
+}
