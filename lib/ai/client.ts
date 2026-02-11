@@ -1,8 +1,8 @@
 import { google } from '@ai-sdk/google';
 
 /**
- * Google Gemini 1.5 Flash model configuration
+ * Google Gemini 2.0 Flash Experimental model configuration
  * Uses GOOGLE_GENERATIVE_AI_API_KEY from environment (automatically detected by AI SDK)
- * Note: Using 'gemini-1.5-flash' (not 'gemini-1.5-flash-latest') for v1beta API
+ * Using Gemini 2.0 Flash Experimental - latest available model
  */
-export const gemini = google('gemini-1.5-flash');
+export const gemini = google('gemini-2.0-flash-exp');
