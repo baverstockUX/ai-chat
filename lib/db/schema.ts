@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
 
 /**
  * User table - stores user authentication and profile information
@@ -27,6 +27,7 @@ export const conversation = pgTable('conversation', {
 /**
  * Message table - stores individual messages within conversations
  * Messages cascade delete when parent conversation is deleted
+ * Supports agent orchestration with messageType and metadata fields
  */
 export const message = pgTable('message', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -35,6 +36,11 @@ export const message = pgTable('message', {
     .references(() => conversation.id, { onDelete: 'cascade' }),
   role: varchar('role', { length: 20, enum: ['user', 'assistant'] }).notNull(),
   content: text('content').notNull(),
+  messageType: varchar('message_type', {
+    length: 30,
+    enum: ['text', 'agent_request', 'agent_progress', 'agent_result']
+  }).default('text').notNull(),
+  metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
