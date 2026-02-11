@@ -8,8 +8,10 @@ import {
   createMessage,
   generateConversationTitle,
   updateConversationTitle,
+  formatContextForPrompt,
 } from '@/lib/db/queries';
 import { detectIntent } from '@/lib/ai/intent-classifier';
+import { extractContext } from '@/lib/ai/context-extractor';
 import type { AgentRequestMetadata } from '@/lib/types/agent';
 
 // Note: Using Node.js runtime (not Edge) because postgres library requires Node.js APIs
@@ -66,6 +68,9 @@ export async function POST(req: Request) {
     // Get the user's latest message
     const userMessage = messages[messages.length - 1];
 
+    // Load context for this conversation
+    const contextPrompt = await formatContextForPrompt(activeConversationId);
+
     // Detect intent before streaming
     const intent = await detectIntent(messages);
 
@@ -114,7 +119,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: gemini,
       messages,
-      system: systemPrompt,
+      system: systemPrompt + contextPrompt, // Inject context
       abortSignal: req.signal,
       async onFinish({ text }) {
         // Save both user message and AI response to database
@@ -129,6 +134,14 @@ export async function POST(req: Request) {
           if (!conversationId) {
             const title = generateConversationTitle(userMessage.content);
             await updateConversationTitle(activeConversationId, title);
+          }
+
+          // Extract and store context from conversation
+          try {
+            await extractContext(activeConversationId, messages);
+          } catch (error) {
+            console.error('Context extraction failed:', error);
+            // Don't fail the response if context extraction errors
           }
         } catch (error) {
           console.error('Error saving messages:', error);
