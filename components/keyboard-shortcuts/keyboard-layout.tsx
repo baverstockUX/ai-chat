@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { KeyboardHandler } from './keyboard-handler';
 import { CommandPalette } from './command-palette';
-import { createConversation, deleteConversation, renameConversation, pinConversation } from '@/app/(chat)/actions';
+import { createConversation, pinConversation } from '@/app/(chat)/actions';
 import type { Conversation } from '@/lib/db/schema';
 import { DeleteConversationDialog } from '@/components/chat/delete-conversation-dialog';
 import { RenameConversationDialog } from '@/components/chat/rename-conversation-dialog';
@@ -44,7 +44,7 @@ export function KeyboardLayout({
   const currentConversation = conversationId
     ? conversations.find((c) => c.id === conversationId)
     : undefined;
-  const currentConversationPinned = currentConversation?.isPinned || false;
+  const currentConversationPinned = currentConversation?.pinned || false;
 
   // Handler functions
   const handleOpenCommandPalette = useCallback(() => {
@@ -78,37 +78,10 @@ export function KeyboardLayout({
     setDeleteDialogOpen(true);
   }, [conversationId]);
 
-  const handleConfirmDelete = useCallback(async () => {
-    if (!conversationId) return;
-    try {
-      await deleteConversation(conversationId);
-      // Redirect happens in server action
-      toast.success('Conversation deleted');
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
-      toast.error('Failed to delete conversation');
-    }
-  }, [conversationId]);
-
   const handleRenameConversation = useCallback(() => {
     if (!conversationId) return;
     setRenameDialogOpen(true);
   }, [conversationId]);
-
-  const handleConfirmRename = useCallback(
-    async (newTitle: string) => {
-      if (!conversationId) return;
-      try {
-        await renameConversation(conversationId, newTitle);
-        toast.success('Conversation renamed');
-        setRenameDialogOpen(false);
-      } catch (error) {
-        console.error('Failed to rename conversation:', error);
-        toast.error('Failed to rename conversation');
-      }
-    },
-    [conversationId]
-  );
 
   const handleTogglePin = useCallback(async () => {
     if (!conversationId) return;
@@ -153,7 +126,7 @@ export function KeyboardLayout({
         conversations={conversations.map((c) => ({
           id: c.id,
           title: c.title,
-          isPinned: c.isPinned,
+          isPinned: c.pinned,
         }))}
         onNewConversation={handleNewConversation}
         onFocusSearch={handleFocusSearch}
@@ -169,14 +142,14 @@ export function KeyboardLayout({
           <DeleteConversationDialog
             open={deleteDialogOpen}
             onOpenChange={setDeleteDialogOpen}
-            onConfirm={handleConfirmDelete}
+            conversationId={conversationId}
             conversationTitle={currentTitle}
           />
 
           <RenameConversationDialog
             open={renameDialogOpen}
             onOpenChange={setRenameDialogOpen}
-            onConfirm={handleConfirmRename}
+            conversationId={conversationId}
             currentTitle={currentTitle}
           />
         </>

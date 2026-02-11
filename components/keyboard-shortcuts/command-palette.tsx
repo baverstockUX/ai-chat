@@ -65,7 +65,7 @@ export function CommandPalette({
   isPinned = false,
 }: CommandPaletteProps) {
   const router = useRouter();
-  const { toggleSidebar, isOpen: sidebarIsOpen } = useSidebarStore();
+  const { toggle: toggleSidebar, isOpen: sidebarIsOpen } = useSidebarStore();
   const [search, setSearch] = React.useState('');
 
   // Close on Escape
