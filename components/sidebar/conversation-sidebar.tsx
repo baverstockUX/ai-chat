@@ -5,6 +5,7 @@ import { useMobile } from '@/lib/hooks/use-mobile';
 import { SidebarHeader } from './sidebar-header';
 import { ConversationSearch } from './conversation-search';
 import { ConversationList } from './conversation-list';
+import { UserMenu } from '@/components/auth/user-menu';
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Conversation } from '@/lib/db/schema';
@@ -14,12 +15,14 @@ import type { Conversation } from '@/lib/db/schema';
  * Desktop: Fixed position on left, collapsible to icon-only (w-0)
  * Mobile: Full-screen overlay with backdrop, swipe-dismissible
  * Smooth transition animations for open/close
+ * Includes user menu with logout at bottom
  */
 interface ConversationSidebarProps {
   conversations: Conversation[];
+  userEmail?: string;
 }
 
-export function ConversationSidebar({ conversations }: ConversationSidebarProps) {
+export function ConversationSidebar({ conversations, userEmail }: ConversationSidebarProps) {
   const { isOpen, setIsOpen } = useSidebarStore();
   const isMobile = useMobile();
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,7 +75,10 @@ export function ConversationSidebar({ conversations }: ConversationSidebarProps)
               onFilteredResults={setFilteredConversations}
               allConversations={conversations}
             />
-            <ConversationList conversations={filteredConversations} searchQuery={searchQuery} />
+            <div className="flex-1 overflow-hidden">
+              <ConversationList conversations={filteredConversations} searchQuery={searchQuery} />
+            </div>
+            <UserMenu userEmail={userEmail} />
           </div>
         </aside>
       </>
@@ -97,7 +103,10 @@ export function ConversationSidebar({ conversations }: ConversationSidebarProps)
             onFilteredResults={setFilteredConversations}
             allConversations={conversations}
           />
-          <ConversationList conversations={filteredConversations} searchQuery={searchQuery} />
+          <div className="flex-1 overflow-hidden">
+            <ConversationList conversations={filteredConversations} searchQuery={searchQuery} />
+          </div>
+          <UserMenu userEmail={userEmail} />
         </div>
       )}
     </aside>

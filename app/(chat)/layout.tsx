@@ -27,7 +27,7 @@ export default async function ChatLayout({
   return (
     <KeyboardLayout conversations={conversations}>
       <div className="flex h-screen overflow-hidden">
-        <ConversationSidebar conversations={conversations} />
+        <ConversationSidebar conversations={conversations} userEmail={session.user.email} />
         <main className="flex-1 relative overflow-hidden">{children}</main>
       </div>
     </KeyboardLayout>
