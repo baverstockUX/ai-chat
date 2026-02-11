@@ -38,7 +38,7 @@ export function KeyboardHandler({
   onRenameConversation,
 }: KeyboardHandlerProps) {
   const router = useRouter();
-  const { toggleSidebar, setIsOpen } = useSidebarStore();
+  const { toggle } = useSidebarStore();
 
   /**
    * Check if the modifier key is pressed (Cmd on Mac, Ctrl on Windows/Linux)
@@ -93,7 +93,7 @@ export function KeyboardHandler({
       // Cmd/Ctrl + B: Toggle sidebar
       if (isModifierKey(e) && e.key === 'b' && !shouldIgnoreShortcut(e)) {
         e.preventDefault();
-        toggleSidebar();
+        toggle();
         return;
       }
 
@@ -150,7 +150,7 @@ export function KeyboardHandler({
     onFocusSearch,
     onDeleteConversation,
     onRenameConversation,
-    toggleSidebar,
+    toggle,
   ]);
 
   // This component doesn't render anything
