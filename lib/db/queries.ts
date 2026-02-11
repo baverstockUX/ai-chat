@@ -1,5 +1,5 @@
 import { db } from './index';
-import { user, conversation, message, Conversation } from './schema';
+import { user, conversation, message, conversationContext, Conversation } from './schema';
 import { eq, desc, and, or, ilike } from 'drizzle-orm';
 import { hash } from 'bcrypt-ts';
 
@@ -120,12 +120,16 @@ export async function getConversationMessages(conversationId: string) {
  * @param conversationId - Conversation UUID
  * @param role - Message role (user or assistant)
  * @param content - Message content
+ * @param messageType - Optional message type (text, agent_request, agent_progress, agent_result)
+ * @param metadata - Optional metadata (JSON object for agent requests)
  * @returns Created message object
  */
 export async function createMessage(
   conversationId: string,
   role: 'user' | 'assistant',
-  content: string
+  content: string,
+  messageType?: 'text' | 'agent_request' | 'agent_progress' | 'agent_result',
+  metadata?: any
 ) {
   const newMessages = await db
     .insert(message)
@@ -133,6 +137,8 @@ export async function createMessage(
       conversationId,
       role,
       content,
+      messageType: messageType || 'text',
+      metadata: metadata || null,
     })
     .returning();
 
@@ -303,4 +309,76 @@ export async function pinConversation(
     .returning();
 
   return updated[0];
+}
+
+/**
+ * Store or update conversation context for cross-session memory
+ * Uses upsert pattern to update existing context or insert new
+ * @param conversationId - Conversation UUID
+ * @param contextType - Type of context: 'domain', 'preference', 'project', 'technology'
+ * @param contextKey - Unique key for this context (e.g., 'uses_kubernetes', 'prefers_typescript')
+ * @param contextValue - Flexible JSONB value for context data
+ * @returns Stored context object
+ */
+export async function storeContext(
+  conversationId: string,
+  contextType: string,
+  contextKey: string,
+  contextValue: any
+) {
+  const stored = await db
+    .insert(conversationContext)
+    .values({
+      conversationId,
+      contextType,
+      contextKey,
+      contextValue,
+    })
+    .onConflictDoUpdate({
+      target: [conversationContext.conversationId, conversationContext.contextKey],
+      set: {
+        contextValue,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  return stored[0];
+}
+
+/**
+ * Retrieve all context for a conversation
+ * Ordered by most recently updated first for relevance
+ * @param conversationId - Conversation UUID
+ * @returns Array of context objects ordered by updatedAt DESC
+ */
+export async function retrieveContext(conversationId: string) {
+  return await db
+    .select()
+    .from(conversationContext)
+    .where(eq(conversationContext.conversationId, conversationId))
+    .orderBy(desc(conversationContext.updatedAt));
+}
+
+/**
+ * Retrieve context filtered by type
+ * Useful for loading only specific context types (e.g., domain vs preferences)
+ * @param conversationId - Conversation UUID
+ * @param contextType - Filter by context type
+ * @returns Array of context objects of specified type, ordered by updatedAt DESC
+ */
+export async function retrieveContextByType(
+  conversationId: string,
+  contextType: string
+) {
+  return await db
+    .select()
+    .from(conversationContext)
+    .where(
+      and(
+        eq(conversationContext.conversationId, conversationId),
+        eq(conversationContext.contextType, contextType)
+      )
+    )
+    .orderBy(desc(conversationContext.updatedAt));
 }
