@@ -42,3 +42,44 @@
     color: hsl(var(--foreground));
   }
 }
+
+/* Mobile-specific styles */
+@layer utilities {
+  /* Prevent zoom on input focus (iOS Safari) */
+  @media screen and (max-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Safe area insets for notched devices */
+  @supports (padding: env(safe-area-inset-top)) {
+    .safe-top {
+      padding-top: env(safe-area-inset-top);
+    }
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .safe-left {
+      padding-left: env(safe-area-inset-left);
+    }
+    .safe-right {
+      padding-right: env(safe-area-inset-right);
+    }
+  }
+
+  /* Smooth scrolling for mobile */
+  @media (max-width: 768px) {
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Minimum touch target size (44x44px) */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

@@ -29,6 +29,7 @@ export default async function ConversationPage({
     <ChatInterface
       conversationId={conversationId}
       initialMessages={messages}
+      conversationTitle={conversation.title}
     />
   );
 }

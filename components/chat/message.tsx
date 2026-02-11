@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { UIMessage } from '@ai-sdk/react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn, formatRelativeTime } from '@/lib/utils';
+import { useMobile } from '@/lib/hooks/use-mobile';
 import { StreamingResponse } from './streaming-response';
 
 interface MessageProps {
@@ -21,6 +22,8 @@ interface MessageProps {
  */
 export function Message({ message, isGrouped = false }: MessageProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [showMobileActions, setShowMobileActions] = useState(false);
+  const isMobile = useMobile();
   const isUser = message.role === 'user';
 
   // Extract text content from message parts
@@ -48,12 +51,19 @@ export function Message({ message, isGrouped = false }: MessageProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Avatar - hidden when grouped */}
+      {/* Avatar - hidden when grouped, smaller on mobile */}
       {!isGrouped && (
-        <Avatar className={cn('h-8 w-8 shrink-0', isUser ? 'order-2' : 'order-1')}>
+        <Avatar
+          className={cn(
+            'shrink-0',
+            isMobile ? 'h-6 w-6' : 'h-8 w-8',
+            isUser ? 'order-2' : 'order-1'
+          )}
+        >
           <AvatarFallback
             className={cn(
-              'text-xs font-medium',
+              'font-medium',
+              isMobile ? 'text-[10px]' : 'text-xs',
               isUser
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
@@ -65,18 +75,20 @@ export function Message({ message, isGrouped = false }: MessageProps) {
       )}
 
       {/* Spacer when avatar is hidden in grouped messages */}
-      {isGrouped && <div className="w-8 shrink-0" />}
+      {isGrouped && <div className={cn('shrink-0', isMobile ? 'w-6' : 'w-8')} />}
 
       {/* Message content */}
       <div className={cn('flex flex-col gap-1', 'flex-1 min-w-0')}>
         <div
           className={cn(
-            'rounded-2xl px-4 py-2 break-words',
+            'rounded-2xl break-words',
+            isMobile ? 'px-3 py-2 text-sm' : 'px-4 py-2',
             isUser
               ? 'bg-blue-500 text-white ml-auto'
               : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100',
-            'max-w-[80%]'
+            isMobile ? 'max-w-[85%]' : 'max-w-[80%]'
           )}
+          onClick={() => isMobile && setShowMobileActions(!showMobileActions)}
         >
           {isUser ? (
             <div className="whitespace-pre-wrap">{textContent}</div>
@@ -96,29 +108,38 @@ export function Message({ message, isGrouped = false }: MessageProps) {
             {/* Timestamp */}
             <span>{formatRelativeTime(new Date())}</span>
 
-            {/* Message actions - visible on hover */}
-            {isHovered && (
+            {/* Message actions - visible on hover (desktop) or tap (mobile) */}
+            {((isMobile && showMobileActions) || (!isMobile && isHovered)) && (
               <div className="flex gap-1">
                 <button
                   onClick={handleCopy}
-                  className="hover:text-foreground transition-colors p-1 rounded hover:bg-muted"
+                  className={cn(
+                    'hover:text-foreground transition-colors rounded hover:bg-muted',
+                    isMobile ? 'p-2 touch-target' : 'p-1'
+                  )}
                   title="Copy message"
                 >
-                  <CopyIcon className="h-3 w-3" />
+                  <CopyIcon className={cn(isMobile ? 'h-4 w-4' : 'h-3 w-3')} />
                 </button>
                 {isUser && (
                   <>
                     <button
-                      className="hover:text-foreground transition-colors p-1 rounded hover:bg-muted"
+                      className={cn(
+                        'hover:text-foreground transition-colors rounded hover:bg-muted',
+                        isMobile ? 'p-2 touch-target' : 'p-1'
+                      )}
                       title="Edit message"
                     >
-                      <EditIcon className="h-3 w-3" />
+                      <EditIcon className={cn(isMobile ? 'h-4 w-4' : 'h-3 w-3')} />
                     </button>
                     <button
-                      className="hover:text-foreground transition-colors p-1 rounded hover:bg-muted"
+                      className={cn(
+                        'hover:text-foreground transition-colors rounded hover:bg-muted',
+                        isMobile ? 'p-2 touch-target' : 'p-1'
+                      )}
                       title="Delete message"
                     >
-                      <DeleteIcon className="h-3 w-3" />
+                      <DeleteIcon className={cn(isMobile ? 'h-4 w-4' : 'h-3 w-3')} />
                     </button>
                   </>
                 )}
