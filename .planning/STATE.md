@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 1 — Chat Foundation & Authentication (01)
-Plan: 3/8 completed
+Plan: 4/8 completed
 Status: Executing
-Last activity: 2026-02-10 — Completed 01-03-PLAN.md (Streaming AI Chat API)
+Last activity: 2026-02-11 — Completed 01-04-PLAN.md (Chat Interface with Message Display)
 
-Progress: [███░░░░░] 3/8 plans (37.5%)
+Progress: [████░░░░] 4/8 plans (50%)
 
 ## Performance Metrics
 
@@ -16,6 +16,7 @@ Progress: [███░░░░░] 3/8 plans (37.5%)
 | 01-01 | 4m 20s   | 2     | 13    |
 | 01-02 | 4m 59s   | 3     | 17    |
 | 01-03 | 2m 8s    | 2     | 4     |
+| 01-04 | 3m 42s   | 3     | 10    |
 
 ## Decisions Made
 
@@ -46,6 +47,15 @@ Progress: [███░░░░░] 3/8 plans (37.5%)
 9. **Edge Runtime for chat API** (01-03)
    - Rationale: Better streaming performance and lower latency
 
+10. **Use 5-minute threshold for message grouping** (01-04)
+    - Rationale: Industry standard (matches Slack), good balance between grouping and clarity
+
+11. **User messages right-aligned blue, AI left-aligned gray** (01-04)
+    - Rationale: Clear visual distinction per user requirements, follows WhatsApp/iMessage patterns
+
+12. **Use Shiki with github-dark theme for syntax highlighting** (01-04)
+    - Rationale: VS Code quality highlighting, familiar to developers, best language support
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -72,10 +82,21 @@ Progress: [███░░░░░] 3/8 plans (37.5%)
 - Message persistence after streaming completes
 - User data isolation via conversation ownership checks
 
+**Chat UI with Message Display:**
+- Complete message display system with user/AI visual distinction
+- Avatars for both user and AI messages (Radix UI)
+- Message grouping by role and time (5-minute threshold)
+- Markdown rendering with Streamdown for streaming support
+- Syntax highlighting with Shiki (20+ languages)
+- Code blocks with copy buttons and language labels
+- Hover-activated message actions (copy, edit, delete placeholders)
+- Auto-scrolling message list with custom styled scrollbars
+- Professional, clean aesthetic with proper spacing and colors
+
 ## Session Info
 
-Last session: 2026-02-10T21:43:14Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-02-11T08:11:27Z
+Stopped at: Completed 01-04-PLAN.md
 
 ---
-*Last updated: 2026-02-10*
+*Last updated: 2026-02-11*
