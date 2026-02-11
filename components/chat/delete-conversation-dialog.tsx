@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { deleteConversation } from '@/app/(chat)/actions';
 import { toast } from 'sonner';
+import { isRedirectError } from '@/lib/utils';
 
 interface DeleteConversationDialogProps {
   conversationId: string;
@@ -39,10 +40,14 @@ export function DeleteConversationDialog({
       toast.success('Conversation deleted');
       // Server action will redirect to home page
     } catch (error) {
-      console.error('Delete conversation error:', error);
-      toast.error('Failed to delete conversation');
-      setIsDeleting(false);
-      onOpenChange(false);
+      // Ignore redirect errors (successful navigation after deletion)
+      if (isRedirectError(error)) {
+        return
+      }
+      console.error('Failed to delete conversation:', error)
+      toast.error('Failed to delete conversation')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
