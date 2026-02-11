@@ -18,7 +18,6 @@ interface ChatInterfaceProps {
   conversationId?: string;
   initialMessages?: SerializedMessage[];
   conversationTitle?: string;
-  initialPrompt?: string;
 }
 
 /**
@@ -180,9 +179,9 @@ export function ChatInterface({
       {isMobile && (
         <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 md:hidden">
           <button
-            onClick={toggle}
+            onClick={toggleSidebar}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            aria-label="Open menu"
+            aria-label="Toggle menu"
           >
             <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
