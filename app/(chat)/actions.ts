@@ -7,9 +7,10 @@ import * as db from '@/lib/db/queries';
 
 /**
  * Create a new conversation and redirect to it
+ * @param prompt - Optional initial prompt to auto-send
  * @returns Redirects to new conversation page
  */
-export async function createConversation() {
+export async function createConversation(prompt?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
@@ -21,7 +22,14 @@ export async function createConversation() {
   );
 
   revalidatePath('/');
-  redirect(`/${conversation.id}`);
+
+  if (prompt) {
+    // URL encode prompt to handle special characters
+    const encodedPrompt = encodeURIComponent(prompt);
+    redirect(`/${conversation.id}?prompt=${encodedPrompt}`);
+  } else {
+    redirect(`/${conversation.id}`);
+  }
 }
 
 /**
