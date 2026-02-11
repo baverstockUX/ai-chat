@@ -9,6 +9,8 @@ import {
   generateConversationTitle,
   updateConversationTitle,
 } from '@/lib/db/queries';
+import { detectIntent } from '@/lib/ai/intent-classifier';
+import type { AgentRequestMetadata } from '@/lib/types/agent';
 
 // Note: Using Node.js runtime (not Edge) because postgres library requires Node.js APIs
 // Edge Runtime doesn't support the postgres client used by Drizzle
@@ -64,6 +66,50 @@ export async function POST(req: Request) {
     // Get the user's latest message
     const userMessage = messages[messages.length - 1];
 
+    // Detect intent before streaming
+    const intent = await detectIntent(messages);
+
+    // If intent is agent_summon, save agent request message and return JSON
+    if (intent.intent === 'agent_summon') {
+      // Save user message first
+      await createMessage(activeConversationId, 'user', userMessage.content);
+
+      // Save agent request message with metadata
+      const agentMessage = await createMessage(
+        activeConversationId,
+        'assistant',
+        intent.summary!,
+        'agent_request',
+        {
+          summary: intent.summary,
+          actions: intent.actions,
+          destructive: intent.destructive,
+          requiresExtraConfirm: intent.requiresExtraConfirm,
+          requestedAt: new Date().toISOString(),
+        } as AgentRequestMetadata
+      );
+
+      // Generate conversation title if first message
+      if (!conversationId) {
+        const title = generateConversationTitle(userMessage.content);
+        await updateConversationTitle(activeConversationId, title);
+      }
+
+      // Return JSON response with agent request details
+      const response = Response.json({
+        type: 'agent_request',
+        message: agentMessage,
+      });
+
+      // Include conversation ID in headers for client-side redirect
+      if (!conversationId && activeConversationId) {
+        response.headers.set('X-Conversation-Id', activeConversationId);
+      }
+
+      return response;
+    }
+
+    // For chat intent, continue with existing streamText flow
     // Stream AI response
     const result = streamText({
       model: gemini,
