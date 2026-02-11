@@ -43,11 +43,22 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
     const currentMessage = messages[currentIndex];
     const previousMessage = messages[currentIndex - 1];
 
+    // Type guard to check if messages have createdAt
+    const hasCreatedAt = (msg: UIMessage | SimpleMessage): msg is SimpleMessage => {
+      return 'createdAt' in msg && msg.createdAt instanceof Date;
+    };
+
     // Same role and within time threshold (5 minutes)
-    return (
-      currentMessage.role === previousMessage.role &&
-      isWithinTimeThreshold(new Date(), new Date(), 5)
-    );
+    if (currentMessage.role === previousMessage.role) {
+      // Only check time threshold if both messages have createdAt
+      if (hasCreatedAt(previousMessage) && hasCreatedAt(currentMessage)) {
+        return isWithinTimeThreshold(previousMessage.createdAt, currentMessage.createdAt, 5);
+      }
+      // If no timestamps, group consecutive messages from same role
+      return true;
+    }
+
+    return false;
   };
 
   return (
