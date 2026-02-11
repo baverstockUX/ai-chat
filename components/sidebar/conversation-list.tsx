@@ -7,6 +7,7 @@ import { MessageSquare, Sparkles } from 'lucide-react';
 import { createConversation } from '@/app/(chat)/actions';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
+import { isRedirectError } from '@/lib/utils';
 
 /**
  * Conversation list component
@@ -37,8 +38,12 @@ export function ConversationList({ conversations, searchQuery }: ConversationLis
         // Pass prompt to server action - it will redirect with prompt in URL
         await createConversation(prompt);
       } catch (error) {
-        toast.error('Failed to create conversation');
-        console.error(error);
+        // Ignore redirect errors (successful navigation)
+        if (isRedirectError(error)) {
+          return
+        }
+        console.error('Failed to create conversation:', error)
+        toast.error('Failed to create conversation')
       }
     });
   };

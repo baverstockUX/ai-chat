@@ -5,6 +5,7 @@ import { useSidebarStore } from '@/lib/stores/sidebar-store';
 import { createConversation } from '@/app/(chat)/actions';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
+import { isRedirectError } from '@/lib/utils';
 
 /**
  * Sidebar header component
@@ -19,8 +20,12 @@ export function SidebarHeader() {
       try {
         await createConversation();
       } catch (error) {
-        toast.error('Failed to create conversation');
-        console.error(error);
+        // Ignore redirect errors (successful navigation)
+        if (isRedirectError(error)) {
+          return
+        }
+        console.error('Failed to create conversation:', error)
+        toast.error('Failed to create conversation')
       }
     });
   };
