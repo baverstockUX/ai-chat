@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 1 — Chat Foundation & Authentication (01)
-Plan: 4/8 completed
+Plan: 5/8 completed
 Status: Executing
-Last activity: 2026-02-11 — Completed 01-04-PLAN.md (Chat Interface with Message Display)
+Last activity: 2026-02-11 — Completed 01-05-PLAN.md (Conversation Management)
 
-Progress: [████░░░░] 4/8 plans (50%)
+Progress: [█████░░░] 5/8 plans (62.5%)
 
 ## Performance Metrics
 
@@ -17,6 +17,7 @@ Progress: [████░░░░] 4/8 plans (50%)
 | 01-02 | 4m 59s   | 3     | 17    |
 | 01-03 | 2m 8s    | 2     | 4     |
 | 01-04 | 3m 42s   | 3     | 10    |
+| 01-05 | 2m 49s   | 3     | 7     |
 
 ## Decisions Made
 
@@ -56,6 +57,12 @@ Progress: [████░░░░] 4/8 plans (50%)
 12. **Use Shiki with github-dark theme for syntax highlighting** (01-04)
     - Rationale: VS Code quality highlighting, familiar to developers, best language support
 
+13. **Use Server Actions for conversation mutations** (01-05)
+    - Rationale: Better integration with Next.js App Router, automatic revalidation
+
+14. **X-Conversation-Id header for redirect** (01-05)
+    - Rationale: Allows client to redirect to conversation URL after first message
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -93,10 +100,19 @@ Progress: [████░░░░] 4/8 plans (50%)
 - Auto-scrolling message list with custom styled scrollbars
 - Professional, clean aesthetic with proper spacing and colors
 
+**Conversation Management:**
+- Server Actions for conversation CRUD (create, rename, delete, pin)
+- Dynamic routing with [conversationId] for URL persistence
+- User-isolated database queries with ownership checks
+- Confirmation dialog system using Radix UI
+- Conversation history persists across browser sessions
+- Automatic redirect to conversation URL after first message
+- Delete cascades to messages automatically via foreign key
+
 ## Session Info
 
-Last session: 2026-02-11T08:11:27Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-02-11T08:16:09Z
+Stopped at: Completed 01-05-PLAN.md
 
 ---
 *Last updated: 2026-02-11*
