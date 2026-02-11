@@ -28,21 +28,21 @@ export default function RegisterPage() {
       }
 
       // Create user account using server action
-      const result = await registerUser(email, password);
+      const registerResult = await registerUser(email, password);
 
-      if (!result.success) {
-        toast.error(result.error || 'Registration failed');
+      if (!registerResult.success) {
+        toast.error(registerResult.error || 'Registration failed');
         return;
       }
 
       // Automatically sign in after successful registration
-      const result = await signIn('credentials', {
+      const signInResult = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
 
-      if (result?.error) {
+      if (signInResult?.error) {
         toast.error('Account created but sign in failed. Please try logging in.');
         router.push('/login');
         return;
