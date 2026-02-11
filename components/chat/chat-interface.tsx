@@ -35,11 +35,9 @@ export function ChatInterface({
   const isMobile = useMobile();
   const { setIsOpen } = useSidebarStore();
 
-  const { messages, sendMessage, status, stop } = useChat({
-    transport: new DefaultChatTransport({
-      api: '/api/chat',
-      body: { conversationId },
-    }),
+  const { messages, append, status, stop } = useChat({
+    api: '/api/chat',
+    body: { conversationId },
     // Convert DB messages to AI SDK format
     initialMessages: initialMessages.map((msg) => ({
       id: msg.id,
@@ -59,7 +57,7 @@ export function ChatInterface({
   });
 
   const handleSend = (content: string) => {
-    sendMessage(content);
+    append({ role: 'user', content });
   };
 
   const isLoading = status === 'submitted' || status === 'streaming';
