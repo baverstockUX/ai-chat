@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageList } from './message-list';
-import { MessageInput } from './message-input';
+import { MessageList } from './message-list-new';
+import { MessageInput } from './message-input-new';
 import { Message as DBMessage } from '@/lib/db/schema';
 import { useRouter } from 'next/navigation';
 import { useMobile } from '@/lib/hooks/use-mobile';
@@ -192,7 +192,11 @@ export function ChatInterface({
         </header>
       )}
 
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList
+        messages={messages}
+        isLoading={isLoading}
+        onSuggestionSelect={handleSend}
+      />
       <MessageInput onSend={handleSend} disabled={isLoading} />
     </div>
   );
