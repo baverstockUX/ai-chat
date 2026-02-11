@@ -7,7 +7,8 @@ import { ConversationSearch } from './conversation-search';
 import { ConversationList } from './conversation-list';
 import { UserMenu } from '@/components/auth/user-menu';
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { Conversation } from '@/lib/db/schema';
 
 /**
@@ -23,7 +24,7 @@ interface ConversationSidebarProps {
 }
 
 export function ConversationSidebar({ conversations, userEmail }: ConversationSidebarProps) {
-  const { isOpen, close } = useSidebarStore();
+  const { isOpen, toggle, close } = useSidebarStore();
   const isMobile = useMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>(conversations);
@@ -88,13 +89,31 @@ export function ConversationSidebar({ conversations, userEmail }: ConversationSi
   // Desktop: Fixed sidebar with collapse
   return (
     <aside
-      className={`
-        hidden md:flex flex-col h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
-        transition-all duration-300 ease-in-out
-        ${isOpen ? 'w-80' : 'w-0'}
-      `}
+      className={cn(
+        "hidden md:flex flex-col h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800",
+        "transition-all duration-300 ease-in-out relative",
+        isOpen ? "w-80" : "w-0"
+      )}
       style={{ flexShrink: 0 }}
     >
+      {/* Toggle button - always visible */}
+      <button
+        onClick={toggle}
+        className={cn(
+          "absolute top-4 p-2 transition-all duration-200 z-50",
+          "hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg",
+          "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm",
+          isOpen ? "right-4" : "left-4"
+        )}
+        aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+        title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+      >
+        {isOpen ? (
+          <ChevronLeft className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+        ) : (
+          <ChevronRight className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+        )}
+      </button>
       {isOpen && (
         <div className="flex flex-col h-full overflow-hidden">
           <SidebarHeader showToggle={false} />
