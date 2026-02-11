@@ -10,8 +10,9 @@ import {
   updateConversationTitle,
 } from '@/lib/db/queries';
 
-// Use Edge Runtime for better streaming performance
-export const runtime = 'edge';
+// Note: Using Node.js runtime (not Edge) because postgres library requires Node.js APIs
+// Edge Runtime doesn't support the postgres client used by Drizzle
+// Streaming still works perfectly in Node.js runtime
 
 // Prevent Vercel timeout on long streaming responses
 export const maxDuration = 30;
