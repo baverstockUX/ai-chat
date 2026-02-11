@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://registry.npmjs.org/react/latest\")",
+      "Bash(python3 -c \"import sys, json; data = json.load\\(sys.stdin\\); print\\(f\"\"React: {data[''version'']}\"\"\\)\")",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:python.langchain.com)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:microsoft.github.io)",
+      "WebFetch(domain:ai-sdk.dev)",
+      "WebFetch(domain:js.langchain.com)",
+      "Bash(curl -s \"https://registry.npmjs.org/vue/latest\")",
+      "Bash(python3 -c \"import sys, json; data = json.load\\(sys.stdin\\); print\\(f\"\"Vue: {data[''version'']}\"\"\\)\")"
+    ]
+  }
+}
