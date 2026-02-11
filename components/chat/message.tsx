@@ -27,7 +27,14 @@ export function Message({ message, isGrouped = false }: MessageProps) {
   const isUser = message.role === 'user';
 
   // Get text content from message
-  const textContent = message.content;
+  // AI SDK v6 uses parts array, but handle legacy content property for compatibility
+  const textContent =
+    message.parts && message.parts.length > 0
+      ? message.parts
+          .filter((part) => part.type === 'text')
+          .map((part) => part.text)
+          .join('')
+      : (message as any).content || '';
 
   // Get user initials for avatar (using first letter for now)
   const userInitial = 'U';

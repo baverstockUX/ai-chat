@@ -91,9 +91,10 @@ export async function POST(req: Request) {
       },
     });
 
-    // Return streaming response with proper SSE headers
+    // Return streaming response as UI message stream for useChat compatibility
+    // toUIMessageStreamResponse() creates a structured stream that useChat can consume
     // Include conversation ID in headers for client-side redirect
-    const response = result.toTextStreamResponse();
+    const response = result.toUIMessageStreamResponse();
     if (!conversationId && activeConversationId) {
       response.headers.set('X-Conversation-Id', activeConversationId);
     }
