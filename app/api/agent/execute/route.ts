@@ -1,5 +1,8 @@
 import { auth } from '@/app/(auth)/auth';
 import { createStubAgent } from '@/lib/ai/agents/stub-agent';
+import { db } from '@/lib/db';
+import { message } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const maxDuration = 60;
 
@@ -10,7 +13,20 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { taskDescription } = await req.json();
+    const { messageId } = await req.json();
+
+    // Look up the agent request message to get the task description
+    const [agentMessage] = await db
+      .select()
+      .from(message)
+      .where(eq(message.id, messageId))
+      .limit(1);
+
+    if (!agentMessage || agentMessage.messageType !== 'agent_request') {
+      return new Response('Agent request not found', { status: 404 });
+    }
+
+    const taskDescription = agentMessage.content || 'Execute task';
 
     // Create stub agent
     const agent = createStubAgent();
