@@ -114,6 +114,12 @@ Plans:
 
 **Requirements:** EXEC-01, EXEC-02, EXEC-07, EXEC-08, EXEC-09, EXEC-10, EXEC-11 (7 requirements)
 
+**Plans:** 2 plans in 2 waves
+
+Plans:
+- [ ] 03-01-PLAN.md — Real opencode agent with process spawning and error handling
+- [ ] 03-02-PLAN.md — Cancellation support with clean process termination
+
 **Deliverables:**
 - CLI agent spawning and process management
 - Output capture (stdout/stderr)
