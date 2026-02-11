@@ -1,10 +1,11 @@
 import { auth } from '@/app/(auth)/auth';
-import { createStubAgent } from '@/lib/ai/agents/stub-agent';
+import { executeOpencodeAgent } from '@/lib/ai/agents/opencode-agent';
 import { db } from '@/lib/db';
 import { message } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const maxDuration = 60;
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -28,17 +29,18 @@ export async function POST(req: Request) {
 
     const taskDescription = agentMessage.content || 'Execute task';
 
-    // Create stub agent
-    const agent = createStubAgent();
-
     // Create Server-Sent Events stream
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
 
         try {
-          // Stream mock progress updates
-          for await (const update of agent.execute(taskDescription)) {
+          // Stream real agent progress updates
+          for await (const update of executeOpencodeAgent({
+            taskDescription,
+            workingDirectory: process.cwd(),
+            abortSignal: req.signal,
+          })) {
             const data = `data: ${JSON.stringify(update)}\n\n`;
             controller.enqueue(encoder.encode(data));
           }
