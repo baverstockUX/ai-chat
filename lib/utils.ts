@@ -39,3 +39,17 @@ export function isWithinTimeThreshold(
   const diffMinutes = diffMs / (1000 * 60);
   return diffMinutes <= thresholdMinutes;
 }
+
+/**
+ * Check if error is a Next.js redirect error (thrown by redirect() in Server Actions)
+ * These should not be shown to users as failures - they indicate successful navigation
+ */
+export function isRedirectError(error: unknown): boolean {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'digest' in error &&
+    typeof error.digest === 'string' &&
+    error.digest.startsWith('NEXT_REDIRECT')
+  )
+}
