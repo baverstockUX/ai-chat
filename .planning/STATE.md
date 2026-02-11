@@ -2,12 +2,12 @@
 
 ## Current Position
 
-Phase: Phase 1 — Chat Foundation & Authentication (01)
-Plan: 11/13 completed
+Phase: Phase 2 — AI Orchestration & Intent Detection (02)
+Plan: 1/5 completed
 Status: In Progress
-Last activity: 2026-02-11 — Completed 01-11 (Sidebar Toggle Persistence)
+Last activity: 2026-02-11 — Completed 02-02 (Prompt-Based Intent Classification)
 
-Progress: [████████░░░░░] 11/13 plans (85%)
+Progress: [██░░░░░░░░░░░] 1/5 plans (20%)
 
 ## Performance Metrics
 
@@ -24,6 +24,7 @@ Progress: [████████░░░░░] 11/13 plans (85%)
 | 01-09 | 3m 20s   | 2     | 2     |
 | 01-11 | 17m 31s  | 1     | 4     |
 | 01-13 | 5m 7s    | 4     | 5     |
+| 02-02 | 2m 52s   | 3     | 5     |
 
 ## Decisions Made
 
@@ -122,7 +123,18 @@ Progress: [████████░░░░░] 11/13 plans (85%)
 
 32. **useEffect with messages.length === 0 guard** (01-13)
     - Rationale: Ensures prompt only sends once on mount, prevents duplicate sends if component re-renders
-- [Phase 01]: Use absolute positioning for toggle button instead of collapsed strip
+
+33. **Use absolute positioning for toggle button** (01-11)
+    - Rationale: Simplest solution that works across both open and collapsed states without maintaining collapsed strip width
+
+34. **Use AI SDK Output.object() for structured responses** (02-02)
+    - Rationale: Leverages Gemini's native structured output with Zod validation for type-safe intent detection
+
+35. **Return JSON (not stream) for agent_summon intent** (02-02)
+    - Rationale: Agent requests require synchronous confirmation UI, not streaming text
+
+36. **Save user message before intent detection response** (02-02)
+    - Rationale: Ensures message persistence even if user cancels agent request
 
 ## Accumulated Context
 
@@ -213,12 +225,9 @@ Progress: [████████░░░░░] 11/13 plans (85%)
 
 ## Session Info
 
-Last session: 2026-02-11T11:33:24Z
-Stopped at: Completed 01-12-PLAN.md (Fix Keyboard Shortcuts Stability)
+Last session: 2026-02-11T15:02:22Z
+Stopped at: Completed 02-02-PLAN.md (Prompt-Based Intent Classification)
 
 ---
 *Last updated: 2026-02-11*
-
-33. **Use absolute positioning for toggle button** (01-11)
-   - Rationale: Simplest solution that works across both open and collapsed states without maintaining collapsed strip width
 
