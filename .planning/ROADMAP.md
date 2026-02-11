@@ -16,7 +16,7 @@ Six-phase roadmap building from foundation (chat + orchestration) → execution 
 
 **Requirements:** CHAT-01 through CHAT-10, AUTH-01 through AUTH-05 (15 requirements)
 
-**Plans:** 8 plans in 4 waves
+**Plans:** 13 plans in 1 wave
 
 Plans:
 - [x] 01-01-PLAN.md — Project setup, Next.js initialization, database schema
@@ -27,6 +27,11 @@ Plans:
 - [x] 01-06-PLAN.md — Sidebar with conversation list and search
 - [x] 01-07-PLAN.md — Keyboard shortcuts and mobile UI
 - [x] 01-08-PLAN.md — Human verification checkpoint
+- [ ] 01-09-PLAN.md — Fix message grouping and mobile toggle (gap closure)
+- [ ] 01-10-PLAN.md — Fix redirect error toasts (gap closure)
+- [ ] 01-11-PLAN.md — Fix sidebar collapse button visibility (gap closure)
+- [ ] 01-12-PLAN.md — Fix keyboard shortcuts mounting and stability (gap closure)
+- [ ] 01-13-PLAN.md — Enable sample prompt auto-send flow (gap closure)
 
 **Deliverables:**
 - Working chat interface with streaming AI responses
