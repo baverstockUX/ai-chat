@@ -127,6 +127,23 @@ export function MessageList({
             );
           }
 
+          // Use MessageContent for agent_progress messages
+          if (simpleMessage.messageType === 'agent_progress') {
+            return (
+              <div key={message.id} className="mb-4">
+                <MessageContent
+                  message={simpleMessage}
+                  conversationId={conversationId}
+                  onApprove={onApprove}
+                  onCancel={onCancel}
+                  onCancelExecution={onCancelExecution}
+                  isExecuting={executingAgentMessageId === message.id}
+                  isCancelling={cancellingAgentMessageId === message.id}
+                />
+              </div>
+            );
+          }
+
           // Use existing Message component for text messages
           return (
             <Message
