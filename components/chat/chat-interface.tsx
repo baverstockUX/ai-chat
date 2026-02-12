@@ -251,6 +251,8 @@ export function ChatInterface({
     async (messageId: string) => {
       if (!conversationId) return;
 
+      let timeoutId: NodeJS.Timeout | null = null;
+
       try {
         // Track which agent message is executing
         setExecutingAgentMessageId(messageId);
@@ -303,6 +305,27 @@ export function ChatInterface({
         let buffer = '';
         const updates: any[] = [];
 
+        // Set timeout for execution (match API maxDuration of 60s)
+        timeoutId = setTimeout(() => {
+          // If still executing after 60s, show timeout message
+          if (agentControllerRef.current) {
+            agentControllerRef.current.abort();
+
+            const timeoutMessage: ExtendedMessage = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: 'Agent execution timed out after 60 seconds. The task may still be running in the background.',
+              createdAt: new Date(),
+              messageType: 'agent_result',
+            };
+            setMessages((prev) => [...prev, timeoutMessage]);
+
+            setExecutingAgentMessageId(null);
+            agentControllerRef.current = null;
+            agentReaderRef.current = null;
+          }
+        }, 60000);
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -352,11 +375,19 @@ export function ChatInterface({
           }
         }
 
+        // Clear timeout on successful completion
+        clearTimeout(timeoutId);
+
         // Cleanup after completion
         setExecutingAgentMessageId(null);
         agentControllerRef.current = null;
         agentReaderRef.current = null;
       } catch (error) {
+        // Clear timeout on error
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
         if ((error as Error).name !== 'AbortError') {
           console.error('Error approving agent request:', error);
         }
