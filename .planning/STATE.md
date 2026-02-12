@@ -2,12 +2,12 @@
 
 ## Current Position
 
-Phase: Phase 2 — AI Orchestration & Intent Detection (02)
-Plan: 5/5 completed
-Status: Complete
-Last activity: 2026-02-11 — Completed 02-05 (Agent Execution Infrastructure)
+Phase: Phase 3 — Agent Execution & Basic Visibility (03)
+Plan: 1/2 completed
+Status: In Progress
+Last activity: 2026-02-12 — Completed 03-01 (Real Agent Execution with opencode CLI)
 
-Progress: [██████████████] 5/5 plans (100%)
+Progress: [███████░░░░░░░] 1/2 plans (50%)
 
 ## Performance Metrics
 
@@ -29,6 +29,7 @@ Progress: [██████████████] 5/5 plans (100%)
 | 02-04 | 1m 58s   | 3     | 4     |
 | Phase 02 P03 | 193 | 3 tasks | 7 files |
 | 02-05 | 8m 16s   | 3     | 2     |
+| 03-01 | 2m       | 3     | 4     |
 
 ## Decisions Made
 
@@ -186,6 +187,30 @@ Progress: [██████████████] 5/5 plans (100%)
 - [Phase 02-03]: MessageContent component routes by messageType for extensibility
 - [Phase 02-03]: Agent execute API endpoint stubbed (full implementation in Plan 02-05)
 
+47. **Use execa v9.6.1 for opencode process spawning** (03-01)
+    - Rationale: Production-standard library handles encoding, signals, streams, error codes better than raw child_process. Solves common pitfalls (partial reads, zombie processes, shell injection).
+
+48. **Parse stdout line-by-line with readline.createInterface** (03-01)
+    - Rationale: Handles partial chunks correctly with crlfDelay: Infinity. Prevents "unexpected end of JSON" errors from splitting JSON across TCP packets.
+
+49. **Collect stderr separately in background** (03-01)
+    - Rationale: Concurrent processing prevents blocking. Preserves error context for diagnostics while allowing stdout to stream immediately.
+
+50. **Map exit codes to user-friendly recovery suggestions** (03-01)
+    - Rationale: Generic errors unhelpful. Exit code 127 = "install opencode", ENOENT = "command not found", API key errors = "re-authenticate" provides actionable guidance.
+
+51. **Set buffer: false to prevent memory leaks** (03-01)
+    - Rationale: Long-running agents (10+ min) would accumulate unbounded output in memory. Streaming prevents memory issues.
+
+52. **Set shell: false to prevent shell injection** (03-01)
+    - Rationale: User input in taskDescription could contain shell metacharacters. shell: false ensures args passed directly to process, not through shell interpreter.
+
+53. **Pass req.signal for automatic cancellation** (03-01)
+    - Rationale: User navigates away → request aborted → req.signal fires → execa kills process → no zombie processes. Clean lifecycle management.
+
+54. **Use process.cwd() as working directory** (03-01)
+    - Rationale: Simple starting point (Next.js project root). Workspace/project selection deferred to later phase.
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -314,11 +339,24 @@ Progress: [██████████████] 5/5 plans (100%)
 - Foundation ready for actual MCP agent implementation in Phase 3
 - End-to-end orchestration UX verified: intent detection → confirmation → progress streaming
 
+**Real Agent Execution (03-01):**
+- opencode CLI process spawning with execa v9.6.1 for production-grade process management
+- Spawn opencode with --format json flag for structured output
+- Line-by-line stdout parsing with readline.createInterface (handles partial chunks)
+- Concurrent stderr collection for error diagnostics (non-blocking)
+- Exit code mapping to user-friendly recovery suggestions (ENOENT, EACCES, API auth, cancellation)
+- Security hardening: buffer: false (prevents memory leaks), shell: false (prevents injection)
+- AbortSignal integration: req.signal → process cancellation → automatic cleanup
+- Real-time progress streaming via existing SSE infrastructure
+- Working directory: process.cwd() (Next.js project root)
+- Stub agent replaced with real implementation
+- Ready for progress visualization UI (spinners, tool call display, error surfacing)
+
 ## Session Info
 
-Last session: 2026-02-11T21:03:12Z
-Stopped at: Completed 02-05-PLAN.md (Agent Execution Infrastructure) - Phase 2 Complete
+Last session: 2026-02-12T08:41:26Z
+Stopped at: Completed 03-01-PLAN.md (Real Agent Execution with opencode CLI)
 
 ---
-*Last updated: 2026-02-11*
+*Last updated: 2026-02-12*
 
