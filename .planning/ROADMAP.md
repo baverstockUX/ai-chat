@@ -163,7 +163,7 @@ Plans:
 
 Plans:
 - [x] 04-02-PLAN.md — Fix SSE metadata sync for real-time execution visualization
-- [ ] 04-03-PLAN.md — Add agent_progress message routing to MessageList
+- [x] 04-03-PLAN.md — Add agent_progress message routing to MessageList
 
 **Deliverables:**
 - Real-time WebSocket/SSE streaming
