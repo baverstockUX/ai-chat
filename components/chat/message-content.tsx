@@ -1,8 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { AgentRequestCard, AgentRequestMetadata } from './agent-request-card';
 import { StreamingResponse } from './streaming-response';
 import { AgentExecutionView } from './agent-execution-view';
+import { SaveResourceDialog } from '@/components/resources/save-resource-dialog';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
 import type { AgentProgressUpdate } from '@/lib/types/agent';
 
 interface Message {
@@ -22,6 +26,40 @@ interface MessageContentProps {
   onCancelExecution?: (messageId: string) => Promise<void>;
   isExecuting?: boolean;
   isCancelling?: boolean;
+}
+
+/**
+ * Agent result display with Save as Resource button
+ */
+function AgentResultMessage({ message, conversationId }: { message: Message; conversationId?: string }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <div className="text-sm">
+        {message.content}
+      </div>
+      {conversationId && (
+        <>
+          <Button
+            onClick={() => setDialogOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Save as Resource
+          </Button>
+          <SaveResourceDialog
+            conversationId={conversationId}
+            messageId={message.id}
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+          />
+        </>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -73,13 +111,9 @@ export function MessageContent({
     return <AgentExecutionView updates={updates} isLive={true} />;
   }
 
-  // Handle agent_result messages (future implementation)
+  // Handle agent_result messages with Save as Resource option
   if (message.messageType === 'agent_result') {
-    return (
-      <div className="text-sm">
-        {message.content}
-      </div>
-    );
+    return <AgentResultMessage message={message} conversationId={conversationId} />;
   }
 
   // Default: text message with streaming support
