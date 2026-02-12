@@ -2,12 +2,12 @@
 
 ## Current Position
 
-Phase: Phase 4 — Dynamic Execution View (04)
-Plan: 2/2 completed
-Status: Complete
-Last activity: 2026-02-12 — Completed 04-03 (Agent Progress Message Routing)
+Phase: Phase 5 — Resources Management and Sharing (05)
+Plan: 2/6 completed
+Status: In Progress
+Last activity: 2026-02-12 — Completed 05-02 (Image Upload Infrastructure)
 
-Progress: [██████████████] 2/2 plans (100%)
+Progress: [█████░░░░░░░░░] 2/6 plans (33%)
 
 ## Performance Metrics
 
@@ -34,6 +34,8 @@ Progress: [██████████████] 2/2 plans (100%)
 | 03-03 | 3m 26s   | 3     | 2     |
 | Phase 04 P02 | 1m 42s | 1 tasks | 4 files |
 | Phase 04 P03 | 34s | 1 tasks | 1 files |
+| 05-01 | 2m 12s   | 3     | 2     |
+| Phase 05 P02 | 2m 30s | 3 tasks | 3 files |
 
 ## Decisions Made
 
@@ -259,6 +261,9 @@ Progress: [██████████████] 2/2 plans (100%)
 
 69. **400px fixed height for execution timeline ScrollArea** (04-02)
     - Rationale: Consistent viewport size prevents layout shifts while allowing vertical scrolling for large execution histories.
+- [Phase 05-02]: Use Server Actions with FormData for file uploads (research Pattern 5)
+- [Phase 05-02]: Store images in public/uploads/images/ for direct web access via Next.js static serving
+- [Phase 05-02]: Generate unique filenames with nanoid to prevent collisions
 
 ## Accumulated Context
 
@@ -446,10 +451,22 @@ Progress: [██████████████] 2/2 plans (100%)
 - Enables real-time execution view to render when agent starts working
 - Gap closure: final routing layer added, execution view fully functional
 
+**Image Upload Infrastructure (05-02):**
+- uploadImage Server Action with FormData and filesystem storage
+- Auth guard checks session.user.id before accepting uploads
+- File type validation: JPEG, PNG, GIF, WebP only
+- File size validation: max 10MB to prevent abuse
+- Unique filename generation with nanoid (21-character cryptographically random IDs)
+- Storage in public/uploads/images/ for direct web access
+- Public URL generation: /uploads/images/[filename]
+- .gitignore configured to exclude uploaded files but track directory structure
+- Ready for client integration in multimodal chat UI
+- Foundation for resource attachment to messages
+
 ## Session Info
 
-Last session: 2026-02-12T20:45:08Z
-Stopped at: Completed 04-03-PLAN.md (Agent Progress Message Routing)
+Last session: 2026-02-12T21:23:43Z
+Stopped at: Completed 05-02-PLAN.md (Image Upload Infrastructure)
 
 ---
 *Last updated: 2026-02-12*
