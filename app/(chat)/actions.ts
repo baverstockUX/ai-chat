@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { auth } from '@/app/(auth)/auth';
 import * as db from '@/lib/db/queries';
+import { db as database } from '@/lib/db';
+import { resource, resourceShare, message } from '@/lib/db/schema';
+import { eq, and, or, asc } from 'drizzle-orm';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { nanoid } from 'nanoid';
@@ -156,5 +159,157 @@ export async function uploadImage(formData: FormData): Promise<UploadImageResult
   } catch (error) {
     console.error('Image upload error:', error);
     return { success: false, error: 'Failed to upload image' };
+  }
+}
+
+interface SaveResourceInput {
+  conversationId: string;
+  messageId: string; // Agent result message
+  name: string;
+  description?: string;
+  resourceType: 'workflow' | 'prompt' | 'agent_config';
+}
+
+/**
+ * Save agent workflow as a reusable Resource
+ * Extracts agent execution history from messages and stores in JSONB content field
+ * @param input - Resource metadata and message references
+ * @returns Success indicator with resource ID
+ */
+export async function saveAsResource(input: SaveResourceInput) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  // Validate name
+  if (input.name.length < 1 || input.name.length > 255) {
+    throw new Error('Name must be 1-255 characters');
+  }
+
+  // Fetch agent execution history from messages
+  const messages = await database
+    .select()
+    .from(message)
+    .where(
+      and(
+        eq(message.conversationId, input.conversationId),
+        or(
+          eq(message.messageType, 'agent_request'),
+          eq(message.messageType, 'agent_progress'),
+          eq(message.messageType, 'agent_result')
+        )
+      )
+    )
+    .orderBy(asc(message.createdAt));
+
+  if (messages.length === 0) {
+    throw new Error('No agent messages found for this conversation');
+  }
+
+  // Extract workflow content from messages
+  const workflowContent = {
+    version: 1, // Schema version for future migrations
+    request: messages.find(m => m.messageType === 'agent_request')?.content,
+    steps: messages
+      .filter(m => m.messageType === 'agent_progress')
+      .map(m => ({
+        timestamp: m.createdAt,
+        content: m.content,
+        metadata: m.metadata,
+      })),
+    result: messages.find(m => m.messageType === 'agent_result')?.content,
+    metadata: {
+      conversationId: input.conversationId,
+      messageId: input.messageId,
+      capturedAt: new Date().toISOString(),
+    },
+  };
+
+  // Create resource using query function
+  const newResource = await db.createResource({
+    userId: session.user.id,
+    name: input.name,
+    description: input.description,
+    resourceType: input.resourceType,
+    content: workflowContent,
+  });
+
+  revalidatePath('/resources');
+  return { success: true, resourceId: newResource.id };
+}
+
+interface CreateShareLinkInput {
+  resourceId: string;
+  expiresInDays?: number; // Optional expiration (e.g., 7, 30)
+  maxAccesses?: number;   // Optional access limit (e.g., 100)
+}
+
+interface CreateShareLinkResult {
+  success: boolean;
+  shareToken?: string;
+  shareUrl?: string;
+  expiresAt?: Date | null;
+  error?: string;
+}
+
+/**
+ * Create a shareable link for a resource with optional expiration and access limits
+ * @param input - Resource ID and optional constraints
+ * @returns Share link result with URL or error
+ */
+export async function createShareLink(input: CreateShareLinkInput): Promise<CreateShareLinkResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    // Verify user owns resource
+    const [resourceRecord] = await database
+      .select()
+      .from(resource)
+      .where(
+        and(
+          eq(resource.id, input.resourceId),
+          eq(resource.userId, session.user.id)
+        )
+      )
+      .limit(1);
+
+    if (!resourceRecord) {
+      return { success: false, error: 'Resource not found or unauthorized' };
+    }
+
+    // Generate secure token (21 chars = 128 bits entropy)
+    const shareToken = nanoid(21);
+
+    // Calculate expiration
+    const expiresAt = input.expiresInDays
+      ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
+      : null;
+
+    // Create share record
+    const [share] = await database
+      .insert(resourceShare)
+      .values({
+        resourceId: input.resourceId,
+        shareToken,
+        expiresAt,
+        maxAccesses: input.maxAccesses,
+      })
+      .returning();
+
+    // Return shareable URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const shareUrl = `${baseUrl}/resources/share/${shareToken}`;
+
+    return {
+      success: true,
+      shareToken,
+      shareUrl,
+      expiresAt: share.expiresAt,
+    };
+  } catch (error) {
+    console.error('Share link creation error:', error);
+    return { success: false, error: 'Failed to create share link' };
   }
 }
