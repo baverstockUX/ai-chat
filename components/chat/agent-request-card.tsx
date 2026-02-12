@@ -25,6 +25,9 @@ export interface AgentRequestCardProps {
   metadata: AgentRequestMetadata;
   onApprove: (messageId: string) => Promise<void>;
   onCancel: (messageId: string) => Promise<void>;
+  onCancelExecution?: (messageId: string) => Promise<void>;
+  isExecuting?: boolean;
+  isCancelling?: boolean;
 }
 
 export function AgentRequestCard({
@@ -33,6 +36,9 @@ export function AgentRequestCard({
   metadata,
   onApprove,
   onCancel,
+  onCancelExecution,
+  isExecuting,
+  isCancelling,
 }: AgentRequestCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
@@ -73,14 +79,28 @@ export function AgentRequestCard({
 
   const proceedButtonVariant = isDestructive ? 'destructive' : 'default';
 
-  // Show status after action completed
-  if (isApproved) {
+  // Show status during execution
+  if (isApproved || isExecuting) {
     return (
       <Card className={`${borderColor} border-2`}>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3 text-green-600 dark:text-green-400">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="font-medium">Agent working...</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-green-600 dark:text-green-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="font-medium">
+                {isCancelling ? 'Cancelling...' : 'Agent working...'}
+              </span>
+            </div>
+            {isExecuting && !isCancelling && onCancelExecution && (
+              <Button
+                onClick={() => onCancelExecution(messageId)}
+                variant="destructive"
+                size="sm"
+                disabled={isCancelling}
+              >
+                Cancel Execution
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

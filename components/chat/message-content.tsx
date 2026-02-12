@@ -17,6 +17,9 @@ interface MessageContentProps {
   conversationId?: string;
   onApprove?: (messageId: string) => Promise<void>;
   onCancel?: (messageId: string) => Promise<void>;
+  onCancelExecution?: (messageId: string) => Promise<void>;
+  isExecuting?: boolean;
+  isCancelling?: boolean;
 }
 
 /**
@@ -31,6 +34,9 @@ export function MessageContent({
   conversationId,
   onApprove,
   onCancel,
+  onCancelExecution,
+  isExecuting,
+  isCancelling,
 }: MessageContentProps) {
   // Handle agent_request messages with confirmation UI
   if (message.messageType === 'agent_request') {
@@ -50,6 +56,9 @@ export function MessageContent({
         metadata={message.metadata as AgentRequestMetadata}
         onApprove={onApprove}
         onCancel={onCancel}
+        onCancelExecution={onCancelExecution}
+        isExecuting={isExecuting}
+        isCancelling={isCancelling}
       />
     );
   }

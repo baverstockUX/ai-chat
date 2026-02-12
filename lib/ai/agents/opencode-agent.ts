@@ -78,6 +78,17 @@ export async function* executeOpencodeAgent(
 
     // Process stdout lines and yield progress updates
     for await (const line of stdoutInterface) {
+      // Check if cancelled before processing
+      if (abortSignal?.aborted) {
+        yield {
+          type: 'complete',
+          timestamp: Date.now(),
+          content: 'Agent execution cancelled by user',
+          success: false,
+        };
+        break; // Exit iteration loop
+      }
+
       if (!line.trim()) continue;
 
       try {
@@ -128,6 +139,17 @@ export async function* executeOpencodeAgent(
       };
     }
   } catch (error: any) {
+    // Check if error caused by cancellation
+    if (abortSignal?.aborted) {
+      yield {
+        type: 'complete',
+        timestamp: Date.now(),
+        content: 'Agent execution cancelled',
+        success: false,
+      };
+      return; // Exit generator
+    }
+
     // Handle process spawn errors
     const recovery = getRecoverySuggestion(
       error.exitCode || null,
