@@ -1,5 +1,5 @@
 import { db } from './index';
-import { user, conversation, message, conversationContext, Conversation } from './schema';
+import { user, conversation, message, conversationContext, resource, Conversation } from './schema';
 import { eq, desc, and, or, ilike } from 'drizzle-orm';
 import { hash } from 'bcrypt-ts';
 
@@ -407,4 +407,137 @@ export async function formatContextForPrompt(conversationId: string): Promise<st
   );
 
   return `\n\nUSER CONTEXT:\n${sections.join('\n\n')}`;
+}
+
+/**
+ * Create a new resource (workflow, prompt, or agent config)
+ * @param input - Resource data including userId, name, description, resourceType, content
+ * @returns Created resource object
+ */
+export async function createResource(input: {
+  userId: string;
+  name: string;
+  description?: string;
+  resourceType: 'workflow' | 'prompt' | 'agent_config';
+  content: any;
+}) {
+  // Validate name length
+  if (input.name.length < 1 || input.name.length > 255) {
+    throw new Error('Resource name must be between 1 and 255 characters');
+  }
+
+  const newResources = await db
+    .insert(resource)
+    .values({
+      userId: input.userId,
+      name: input.name,
+      description: input.description || null,
+      resourceType: input.resourceType,
+      content: input.content,
+    })
+    .returning();
+
+  return newResources[0];
+}
+
+/**
+ * Get all resources for a user with optional filters
+ * @param userId - User's UUID
+ * @param filters - Optional search and resourceType filters
+ * @returns Array of resources ordered by updatedAt DESC
+ */
+export async function getUserResources(
+  userId: string,
+  filters?: { search?: string; resourceType?: 'workflow' | 'prompt' | 'agent_config' }
+) {
+  let query = db
+    .select()
+    .from(resource)
+    .where(eq(resource.userId, userId));
+
+  // Apply search filter if provided
+  if (filters?.search) {
+    const searchPattern = `%${filters.search}%`;
+    query = query.where(
+      and(
+        eq(resource.userId, userId),
+        or(
+          ilike(resource.name, searchPattern),
+          ilike(resource.description, searchPattern)
+        )
+      )
+    ) as any;
+  }
+
+  // Apply resourceType filter if provided
+  if (filters?.resourceType) {
+    query = query.where(
+      and(
+        eq(resource.userId, userId),
+        eq(resource.resourceType, filters.resourceType)
+      )
+    ) as any;
+  }
+
+  return await query.orderBy(desc(resource.updatedAt));
+}
+
+/**
+ * Get a single resource by ID with user ownership check
+ * @param resourceId - Resource UUID
+ * @param userId - User's UUID (for ownership verification)
+ * @returns Resource object or undefined if not found/not owned
+ */
+export async function getResourceById(resourceId: string, userId: string) {
+  const resources = await db
+    .select()
+    .from(resource)
+    .where(and(eq(resource.id, resourceId), eq(resource.userId, userId)))
+    .limit(1);
+
+  return resources[0];
+}
+
+/**
+ * Update a resource with user ownership check
+ * @param resourceId - Resource UUID
+ * @param userId - User's UUID (for ownership verification)
+ * @param updates - Partial resource data to update
+ * @returns Updated resource object or undefined if not found/not owned
+ */
+export async function updateResource(
+  resourceId: string,
+  userId: string,
+  updates: { name?: string; description?: string; content?: any }
+) {
+  // Validate name length if provided
+  if (updates.name && (updates.name.length < 1 || updates.name.length > 255)) {
+    throw new Error('Resource name must be between 1 and 255 characters');
+  }
+
+  const updated = await db
+    .update(resource)
+    .set({
+      ...updates,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(resource.id, resourceId), eq(resource.userId, userId)))
+    .returning();
+
+  return updated[0];
+}
+
+/**
+ * Delete a resource with user ownership check
+ * @param resourceId - Resource UUID
+ * @param userId - User's UUID (for ownership verification)
+ * @returns Object with success status
+ */
+export async function deleteResource(resourceId: string, userId: string) {
+  const deleted = await db
+    .delete(resource)
+    .where(and(eq(resource.id, resourceId), eq(resource.userId, userId)))
+    .returning();
+
+  return { success: deleted.length > 0 };
 }
