@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 3 — Agent Execution & Basic Visibility (03)
-Plan: 2/2 completed
+Plan: 3/3 completed
 Status: Complete
-Last activity: 2026-02-12 — Completed 03-02 (Agent Cancellation Support)
+Last activity: 2026-02-12 — Completed 03-03 (Fix Agent Progress Streaming & Cancellation UX)
 
-Progress: [██████████████] 2/2 plans (100%)
+Progress: [██████████████] 3/3 plans (100%)
 
 ## Performance Metrics
 
@@ -31,6 +31,7 @@ Progress: [██████████████] 2/2 plans (100%)
 | 02-05 | 8m 16s   | 3     | 2     |
 | 03-01 | 2m       | 3     | 4     |
 | 03-02 | 45m      | 2     | 3     |
+| 03-03 | 3m 26s   | 3     | 2     |
 
 ## Decisions Made
 
@@ -227,6 +228,21 @@ Progress: [██████████████] 2/2 plans (100%)
 59. **Distinguish cancellation from errors in catch block** (03-02)
     - Rationale: Cancellation is user-initiated (not an error). Separate check yields cancellation event instead of error event for correct UI state.
 
+60. **Use Promise.race for heartbeat mechanism** (03-03)
+    - Rationale: Async generators can't yield from setInterval callbacks. Promise.race between line iterator and timeout provides clean periodic checks without blocking.
+
+61. **2-second heartbeat interval for progress updates** (03-03)
+    - Rationale: Balances user feedback needs with message spam prevention. Short enough to show liveness, long enough to avoid clutter.
+
+62. **Treat JSON parse failures as plain text** (03-03)
+    - Rationale: opencode with --format json produces non-JSON output during execution. Displaying as plain text provides visibility instead of silent execution.
+
+63. **60-second timeout matching API maxDuration** (03-03)
+    - Rationale: Consistency with server timeout prevents client-server mismatch. Provides escape hatch for dropped connections.
+
+64. **Clear timeout on all exit paths** (03-03)
+    - Rationale: Prevents timeout firing after successful completion. Moved timeoutId declaration outside try block for access in catch block.
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -380,10 +396,21 @@ Progress: [██████████████] 2/2 plans (100%)
 - UI state management: isExecuting, isCancelling flags control button visibility
 - User-initiated cancellation (EXEC-10) and clean cleanup (EXEC-11) implemented
 
+**Agent Progress Streaming & UX (03-03):**
+- Immediate start event shown when agent begins execution
+- Heartbeat mechanism with Promise.race provides periodic updates every 2 seconds
+- Non-JSON output from opencode displayed as plain text (fallback for structured output failures)
+- Cancellation confirmation message appears after user aborts execution
+- 60-second timeout prevents indefinite "Agent working..." state if connection drops
+- Timeout shows informative message instead of silent failure
+- Timeout cleared on both success and error paths to prevent false positives
+- All UAT issues resolved: progress streaming (Test 3), completion status (Test 4), cancellation confirmation (Test 6)
+- Real-time feedback layer complete for agent execution
+
 ## Session Info
 
-Last session: 2026-02-12T09:45:00Z
-Stopped at: Completed 03-02-PLAN.md (Agent Cancellation Support) - Phase 3 Complete
+Last session: 2026-02-12T09:41:34Z
+Stopped at: Completed 03-03-PLAN.md (Fix Agent Progress Streaming & Cancellation UX) - Phase 3 Complete
 
 ---
 *Last updated: 2026-02-12*
