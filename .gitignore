@@ -35,3 +35,8 @@ next-env.d.ts
 
 # drizzle
 drizzle/
+
+# uploaded files
+public/uploads/*
+!public/uploads/.gitkeep
+!public/uploads/images/.gitkeep
