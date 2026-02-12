@@ -12,6 +12,7 @@ import {
 } from '@/lib/db/queries';
 import { detectIntent } from '@/lib/ai/intent-classifier';
 import { extractContext } from '@/lib/ai/context-extractor';
+import { searchWeb } from '@/lib/integrations/search/duckduckgo';
 import type { AgentRequestMetadata } from '@/lib/types/agent';
 
 // Note: Using Node.js runtime (not Edge) because postgres library requires Node.js APIs
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { messages, conversationId } = body;
+    const { messages, conversationId, imageUrl } = body;
 
     // Validate messages array
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -67,9 +68,37 @@ export async function POST(req: Request) {
 
     // Get the user's latest message
     const userMessage = messages[messages.length - 1];
+    const userMessageContent = userMessage?.content || '';
 
     // Load context for this conversation
     const contextPrompt = await formatContextForPrompt(activeConversationId);
+
+    // Detect search intent and fetch search results
+    let searchContext = '';
+    if (
+      userMessageContent.toLowerCase().includes('search for') ||
+      userMessageContent.toLowerCase().includes('look up') ||
+      userMessageContent.toLowerCase().startsWith('search:')
+    ) {
+      // Extract search query
+      const searchMatch = userMessageContent.match(/search (?:for |up )?["']?([^"']+)["']?/i);
+      if (searchMatch) {
+        const searchQuery = searchMatch[1];
+
+        try {
+          const results = await searchWeb(searchQuery);
+
+          // Format results for AI context injection
+          searchContext = results.length > 0
+            ? `\n\nWeb search results for "${searchQuery}":\n\n${results
+                .map((r, i) => `[${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`)
+                .join('\n\n')}`
+            : `\n\nNo web search results found for "${searchQuery}"`;
+        } catch (error) {
+          console.error('Search integration error:', error);
+        }
+      }
+    }
 
     // Detect intent before streaming
     console.log('[Chat API] Calling detectIntent...');
@@ -80,8 +109,9 @@ export async function POST(req: Request) {
 
     // If intent is agent_summon, save agent request message and return JSON
     if (intent.intent === 'agent_summon') {
-      // Save user message first
-      await createMessage(activeConversationId, 'user', userMessage.content);
+      // Save user message first with attachments if present
+      const attachments = imageUrl ? [{ type: 'image', url: imageUrl }] : undefined;
+      await createMessage(activeConversationId, 'user', userMessage.content, 'text', undefined, attachments);
 
       // Save agent request message with metadata
       const agentMessage = await createMessage(
@@ -119,17 +149,37 @@ export async function POST(req: Request) {
     }
 
     // For chat intent, continue with existing streamText flow
+    // Build multimodal messages array if image is attached
+    const aiMessages = messages.map((m: any) => {
+      // If this is the latest message with an image attachment, use multimodal format
+      if (m === userMessage && imageUrl) {
+        return {
+          role: m.role,
+          content: [
+            { type: 'text', text: m.content },
+            { type: 'image', image: imageUrl }
+          ]
+        };
+      }
+      // Standard text-only message
+      return {
+        role: m.role,
+        content: m.content
+      };
+    });
+
     // Stream AI response
     const result = streamText({
       model: gemini,
-      messages,
-      system: systemPrompt + contextPrompt, // Inject context
+      messages: aiMessages,
+      system: systemPrompt + contextPrompt + searchContext, // Inject context and search results
       abortSignal: req.signal,
       async onFinish({ text }) {
         // Save both user message and AI response to database
         try {
-          // Save user message
-          await createMessage(activeConversationId, 'user', userMessage.content);
+          // Save user message with attachments if present
+          const attachments = imageUrl ? [{ type: 'image', url: imageUrl }] : undefined;
+          await createMessage(activeConversationId, 'user', userMessage.content, 'text', undefined, attachments);
 
           // Save AI response
           await createMessage(activeConversationId, 'assistant', text);

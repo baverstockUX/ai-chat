@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageList } from './message-list-new';
-import { MessageInput } from './message-input-new';
+import { MessageInput } from './message-input';
 import { Message as DBMessage } from '@/lib/db/schema';
 import { useRouter } from 'next/navigation';
 import { useMobile } from '@/lib/hooks/use-mobile';
@@ -78,8 +78,8 @@ export function ChatInterface({
   }, []);
 
   const handleSend = useCallback(
-    async (content: string) => {
-      if (!content.trim() || isLoading) return;
+    async (content: string, imageUrl?: string) => {
+      if ((!content.trim() && !imageUrl) || isLoading) return;
 
       const userMessage = {
         id: crypto.randomUUID(),
@@ -115,6 +115,7 @@ export function ChatInterface({
               content: m.content,
             })),
             conversationId,
+            imageUrl, // Pass imageUrl to API
           }),
           signal: controller.signal,
         });

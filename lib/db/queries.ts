@@ -122,6 +122,7 @@ export async function getConversationMessages(conversationId: string) {
  * @param content - Message content
  * @param messageType - Optional message type (text, agent_request, agent_progress, agent_result)
  * @param metadata - Optional metadata (JSON object for agent requests)
+ * @param attachments - Optional attachments array (JSON object for images, files, etc.)
  * @returns Created message object
  */
 export async function createMessage(
@@ -129,7 +130,8 @@ export async function createMessage(
   role: 'user' | 'assistant',
   content: string,
   messageType?: 'text' | 'agent_request' | 'agent_progress' | 'agent_result',
-  metadata?: any
+  metadata?: any,
+  attachments?: any
 ) {
   const newMessages = await db
     .insert(message)
@@ -139,6 +141,7 @@ export async function createMessage(
       content,
       messageType: messageType || 'text',
       metadata: metadata || null,
+      attachments: attachments || null,
     })
     .returning();
 

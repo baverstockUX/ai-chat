@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
+import { ImageUploader } from './image-uploader';
 
 interface MessageInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string, imageUrl?: string) => void;
   disabled?: boolean;
 }
 
@@ -18,6 +19,7 @@ interface MessageInputProps {
  */
 export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
   const [input, setInput] = useState('');
+  const [attachedImage, setAttachedImage] = useState<string>('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-focus on mount
@@ -36,9 +38,10 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
 
   const handleSend = () => {
     const trimmedInput = input.trim();
-    if (trimmedInput && !disabled) {
-      onSend(trimmedInput);
+    if ((trimmedInput || attachedImage) && !disabled) {
+      onSend(trimmedInput, attachedImage || undefined);
       setInput('');
+      setAttachedImage('');
 
       // Reset textarea height
       if (textareaRef.current) {
@@ -57,34 +60,50 @@ export function MessageInput({ onSend, disabled = false }: MessageInputProps) {
 
   return (
     <div className="border-t bg-background p-4">
-      <div className="flex gap-2 max-w-4xl mx-auto">
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          disabled={disabled}
-          rows={1}
-          className={cn(
-            'flex-1 resize-none rounded-lg border bg-background px-4 py-3',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            'min-h-[44px] max-h-[200px]'
-          )}
-        />
-        <button
-          onClick={handleSend}
-          disabled={disabled || !input.trim()}
-          className={cn(
-            'px-6 py-3 rounded-lg font-medium transition-colors',
-            'bg-primary text-primary-foreground hover:bg-primary/90',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            'min-w-[80px]'
-          )}
-        >
-          {disabled ? 'Sending...' : 'Send'}
-        </button>
+      <div className="max-w-4xl mx-auto space-y-2">
+        {attachedImage && (
+          <div className="relative inline-block">
+            <img
+              src={attachedImage}
+              alt="Attached"
+              className="max-w-[150px] h-auto max-h-24 rounded border"
+            />
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            disabled={disabled}
+            rows={1}
+            className={cn(
+              'flex-1 resize-none rounded-lg border bg-background px-4 py-3',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              'min-h-[44px] max-h-[200px]'
+            )}
+          />
+          <button
+            onClick={handleSend}
+            disabled={disabled || (!input.trim() && !attachedImage)}
+            className={cn(
+              'px-6 py-3 rounded-lg font-medium transition-colors',
+              'bg-primary text-primary-foreground hover:bg-primary/90',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'min-w-[80px]'
+            )}
+          >
+            {disabled ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <ImageUploader onImageUploaded={setAttachedImage} />
+        </div>
       </div>
     </div>
   );
