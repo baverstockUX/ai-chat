@@ -64,6 +64,10 @@ export function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   const newConversationIdRef = useRef<string | null>(null);
+  const [executingAgentMessageId, setExecutingAgentMessageId] = useState<string | null>(null);
+  const [cancellingAgentMessageId, setCancellingAgentMessageId] = useState<string | null>(null);
+  const agentControllerRef = useRef<AbortController | null>(null);
+  const agentReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
   // Abort streaming on unmount
   useEffect(() => {
@@ -248,6 +252,13 @@ export function ChatInterface({
       if (!conversationId) return;
 
       try {
+        // Track which agent message is executing
+        setExecutingAgentMessageId(messageId);
+
+        // Create AbortController for cancellation
+        const controller = new AbortController();
+        agentControllerRef.current = controller;
+
         const response = await fetch('/api/agent/execute', {
           method: 'POST',
           headers: {
@@ -257,24 +268,107 @@ export function ChatInterface({
             messageId,
             conversationId,
           }),
+          signal: controller.signal,
         });
 
         if (!response.ok) {
           console.error('Failed to execute agent request');
+          setExecutingAgentMessageId(null);
+          agentControllerRef.current = null;
           return;
         }
 
-        // Agent execution will be handled in Plan 02-05
-        // For now, just mark the request as approved
-        console.log('Agent request approved:', messageId);
+        // Create progress message to show updates
+        const progressMessageId = crypto.randomUUID();
+        const progressMessage: ExtendedMessage = {
+          id: progressMessageId,
+          role: 'assistant',
+          content: 'Starting agent execution...',
+          createdAt: new Date(),
+          messageType: 'agent_progress',
+          metadata: { updates: [] },
+        };
+        setMessages((prev) => [...prev, progressMessage]);
+
+        // Consume SSE stream and update progress message
+        if (!response.body) {
+          setExecutingAgentMessageId(null);
+          agentControllerRef.current = null;
+          return;
+        }
+
+        const reader = response.body.getReader();
+        agentReaderRef.current = reader;
+        const decoder = new TextDecoder();
+        let buffer = '';
+        const updates: any[] = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete lines from SSE stream
+          let newlineIndex: number;
+          while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+            const line = buffer.slice(0, newlineIndex).trim();
+            buffer = buffer.slice(newlineIndex + 1);
+
+            if (!line.startsWith('data:')) continue;
+
+            const jsonPart = line.slice('data:'.length).trim();
+            if (!jsonPart) continue;
+
+            try {
+              const update = JSON.parse(jsonPart);
+              updates.push(update);
+
+              // Build content from updates
+              let content = '';
+              for (const u of updates) {
+                if (u.type === 'text') {
+                  content += `\n${u.content}`;
+                } else if (u.type === 'tool_call') {
+                  content += `\n🔧 ${u.content}`;
+                } else if (u.type === 'tool_result') {
+                  content += `\n${u.success ? '✅' : '❌'} ${u.content}`;
+                } else if (u.type === 'complete') {
+                  content += `\n\n${u.content}`;
+                }
+              }
+
+              // Update progress message
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === progressMessageId
+                    ? { ...msg, content: content.trim() }
+                    : msg
+                )
+              );
+            } catch {
+              // Ignore malformed lines
+            }
+          }
+        }
+
+        // Cleanup after completion
+        setExecutingAgentMessageId(null);
+        agentControllerRef.current = null;
+        agentReaderRef.current = null;
       } catch (error) {
-        console.error('Error approving agent request:', error);
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error approving agent request:', error);
+        }
+        setExecutingAgentMessageId(null);
+        agentControllerRef.current = null;
+        agentReaderRef.current = null;
       }
     },
     [conversationId]
   );
 
-  // Handle agent request cancellation
+  // Handle agent request cancellation (before execution starts)
   const handleCancel = useCallback(
     async (messageId: string) => {
       // Send a follow-up message asking for alternatives
@@ -283,6 +377,46 @@ export function ChatInterface({
       await handleSend(cancelMessage);
     },
     [handleSend]
+  );
+
+  // Handle agent execution cancellation (during execution)
+  const handleCancelExecution = useCallback(
+    async (messageId: string) => {
+      if (!agentControllerRef.current || executingAgentMessageId !== messageId) {
+        return;
+      }
+
+      setCancellingAgentMessageId(messageId);
+
+      // Abort the fetch request
+      agentControllerRef.current.abort();
+
+      // Cancel the reader
+      if (agentReaderRef.current) {
+        try {
+          await agentReaderRef.current.cancel();
+        } catch {
+          // Ignore cancellation errors
+        }
+      }
+
+      // Cleanup
+      agentControllerRef.current = null;
+      agentReaderRef.current = null;
+      setExecutingAgentMessageId(null);
+      setCancellingAgentMessageId(null);
+
+      // Add cancellation confirmation message
+      const cancellationMessage: ExtendedMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Agent execution cancelled by user.',
+        createdAt: new Date(),
+        messageType: 'agent_result',
+      };
+      setMessages((prev) => [...prev, cancellationMessage]);
+    },
+    [executingAgentMessageId]
   );
 
   return (
@@ -310,6 +444,9 @@ export function ChatInterface({
         conversationId={conversationId}
         onApprove={handleApprove}
         onCancel={handleCancel}
+        onCancelExecution={handleCancelExecution}
+        executingAgentMessageId={executingAgentMessageId}
+        cancellingAgentMessageId={cancellingAgentMessageId}
       />
       <MessageInput onSend={handleSend} disabled={isLoading} />
     </div>
