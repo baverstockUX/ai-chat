@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ShareDialog } from './share-dialog';
+import { ForkDialog } from './fork-dialog';
+import { executeResource } from '@/app/(chat)/actions';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import type { Resource } from '@/lib/db/schema';
 import { formatDistance } from 'date-fns';
 
@@ -14,10 +18,26 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource, onUpdate }: ResourceCardProps) {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [forkDialogOpen, setForkDialogOpen] = useState(false);
+  const router = useRouter();
 
   const handleExecute = async () => {
-    // Execute workflow (implement in Phase 5 Plan 5)
-    console.log('Execute resource:', resource.id);
+    try {
+      const result = await executeResource(resource.id);
+
+      if (result.success && result.agentRequest) {
+        // Navigate to chat with execution context
+        // Store in localStorage or create new conversation with agent request
+        toast.success('Starting workflow execution...');
+        router.push('/'); // Navigate to chat
+
+        // TODO: Trigger agent execution with result.agentRequest
+        // This will be integrated with existing agent execution infrastructure
+      }
+    } catch (error) {
+      console.error('Failed to execute resource:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to execute resource');
+    }
   };
 
   const handleDelete = async () => {
@@ -62,6 +82,11 @@ export function ResourceCard({ resource, onUpdate }: ResourceCardProps) {
           <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
             Share
           </Button>
+          {!resource.parentResourceId && (
+            <Button variant="outline" size="sm" onClick={() => setForkDialogOpen(true)}>
+              Fork
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handleDelete}>
             Delete
           </Button>
@@ -73,6 +98,13 @@ export function ResourceCard({ resource, onUpdate }: ResourceCardProps) {
         resourceName={resource.name}
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
+      />
+
+      <ForkDialog
+        resourceId={resource.id}
+        resourceName={resource.name}
+        open={forkDialogOpen}
+        onOpenChange={setForkDialogOpen}
       />
     </>
   );
