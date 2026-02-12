@@ -6,7 +6,7 @@ import { auth } from '@/app/(auth)/auth';
 import * as db from '@/lib/db/queries';
 import { db as database } from '@/lib/db';
 import { resource, resourceShare, message } from '@/lib/db/schema';
-import { eq, and, or, asc } from 'drizzle-orm';
+import { eq, and, or, asc, sql } from 'drizzle-orm';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { nanoid } from 'nanoid';
@@ -312,4 +312,103 @@ export async function createShareLink(input: CreateShareLinkInput): Promise<Crea
     console.error('Share link creation error:', error);
     return { success: false, error: 'Failed to create share link' };
   }
+}
+
+/**
+ * Fork a resource to create an independent copy with lineage tracking
+ * Allows users to copy shared resources into their workspace
+ * @param resourceId - Resource UUID to fork
+ * @returns Success indicator with new resource ID
+ */
+export async function forkResource(resourceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  // Fetch original resource (no ownership check - can fork shared resources)
+  const [originalResource] = await database
+    .select()
+    .from(resource)
+    .where(eq(resource.id, resourceId))
+    .limit(1);
+
+  if (!originalResource) {
+    throw new Error('Resource not found');
+  }
+
+  // Create forked resource
+  const [forkedResource] = await database
+    .insert(resource)
+    .values({
+      userId: session.user.id,
+      name: `${originalResource.name} (Fork)`,
+      description: originalResource.description,
+      resourceType: originalResource.resourceType,
+      content: originalResource.content, // Deep copy JSONB
+      parentResourceId: originalResource.id, // Track lineage
+      isPublic: false, // Forked resources private by default
+    })
+    .returning();
+
+  // Increment fork count on original
+  await database
+    .update(resource)
+    .set({
+      forkCount: sql`${resource.forkCount} + 1`,
+    })
+    .where(eq(resource.id, resourceId));
+
+  revalidatePath('/resources');
+  return { success: true, resourceId: forkedResource.id };
+}
+
+/**
+ * Execute a saved resource workflow
+ * Updates execution metadata and returns agent request for execution
+ * @param resourceId - Resource UUID to execute
+ * @returns Agent request for execution
+ */
+export async function executeResource(resourceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  // Fetch resource with ownership check
+  const [resourceData] = await database
+    .select()
+    .from(resource)
+    .where(
+      and(
+        eq(resource.id, resourceId),
+        eq(resource.userId, session.user.id)
+      )
+    )
+    .limit(1);
+
+  if (!resourceData) {
+    throw new Error('Resource not found or unauthorized');
+  }
+
+  // Extract workflow content
+  const workflowContent = resourceData.content as any;
+  const agentRequest = workflowContent.request;
+
+  if (!agentRequest) {
+    throw new Error('Invalid resource content: missing request');
+  }
+
+  // Update execution metadata
+  await database
+    .update(resource)
+    .set({
+      executionCount: sql`${resource.executionCount} + 1`,
+      lastExecutedAt: new Date(),
+    })
+    .where(eq(resource.id, resourceId));
+
+  // Return agent request for execution
+  // (actual execution handled by existing agent infrastructure)
+  return {
+    success: true,
+    agentRequest,
+    resourceId,
+  };
 }
