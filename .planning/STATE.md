@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 5 — Resources Management and Sharing (05)
-Plan: 2/6 completed
+Plan: 3/6 completed
 Status: In Progress
-Last activity: 2026-02-12 — Completed 05-02 (Image Upload Infrastructure)
+Last activity: 2026-02-12 — Completed 05-04 (Resource Sharing with Token-Based Access)
 
-Progress: [█████░░░░░░░░░] 2/6 plans (33%)
+Progress: [███████░░░░░░░] 3/6 plans (50%)
 
 ## Performance Metrics
 
@@ -36,6 +36,8 @@ Progress: [█████░░░░░░░░░] 2/6 plans (33%)
 | Phase 04 P03 | 34s | 1 tasks | 1 files |
 | 05-01 | 2m 12s   | 3     | 2     |
 | Phase 05 P02 | 2m 30s | 3 tasks | 3 files |
+| Phase 05 P04 | 3m 25s | 3 tasks | 3 files |
+| Phase 05 P03 | 207s | 4 tasks | 7 files |
 
 ## Decisions Made
 
@@ -261,9 +263,24 @@ Progress: [█████░░░░░░░░░] 2/6 plans (33%)
 
 69. **400px fixed height for execution timeline ScrollArea** (04-02)
     - Rationale: Consistent viewport size prevents layout shifts while allowing vertical scrolling for large execution histories.
-- [Phase 05-02]: Use Server Actions with FormData for file uploads (research Pattern 5)
-- [Phase 05-02]: Store images in public/uploads/images/ for direct web access via Next.js static serving
-- [Phase 05-02]: Generate unique filenames with nanoid to prevent collisions
+
+70. **Use Server Actions with FormData for file uploads** (05-02)
+    - Rationale: Research Pattern 5 - server-side validation before filesystem write, no client-side upload logic
+
+71. **Store images in public/uploads/images/ for direct web access** (05-02)
+    - Rationale: Next.js static serving from public/ directory, simple URL path generation
+
+72. **Generate unique filenames with nanoid to prevent collisions** (05-02)
+    - Rationale: Cryptographically random IDs prevent filename conflicts in shared upload directory
+
+73. **nanoid(21) for share token generation (128-bit entropy)** (05-04)
+    - Rationale: Research Pattern 3 recommendation, collision probability ~1% after 10^15 IDs, shorter than UUID
+
+74. **Atomic access count increment with sql template** (05-04)
+    - Rationale: Prevents race conditions when multiple users access shared resource simultaneously
+
+75. **Privacy: userId not exposed in share response** (05-04)
+    - Rationale: Shared resources show content but not owner identity, prevents user account reconnaissance
 
 ## Accumulated Context
 
@@ -463,10 +480,23 @@ Progress: [█████░░░░░░░░░] 2/6 plans (33%)
 - Ready for client integration in multimodal chat UI
 - Foundation for resource attachment to messages
 
+**Resource Sharing with Token-Based Access (05-04):**
+- createShareLink Server Action with resource ownership validation
+- nanoid(21) token generation (128-bit entropy) for secure share links
+- Optional expiration (expiresInDays) and access limits (maxAccesses)
+- Public GET /api/resources/share/[token] route (no auth required)
+- Expiration validation (410 Gone status if expired)
+- Access limit validation (429 Too Many Requests if exceeded)
+- Atomic access count increment using SQL to prevent race conditions
+- Privacy protection: userId not exposed in share response
+- ShareDialog component with expiration input and copy-to-clipboard
+- ResourceCard component with Share, Execute, Delete actions
+- Enables viral workflow distribution via shareable links
+
 ## Session Info
 
-Last session: 2026-02-12T21:23:43Z
-Stopped at: Completed 05-02-PLAN.md (Image Upload Infrastructure)
+Last session: 2026-02-12T21:30:00Z
+Stopped at: Completed 05-04-PLAN.md (Resource Sharing with Token-Based Access)
 
 ---
 *Last updated: 2026-02-12*
