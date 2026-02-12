@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 3 — Agent Execution & Basic Visibility (03)
-Plan: 1/2 completed
-Status: In Progress
-Last activity: 2026-02-12 — Completed 03-01 (Real Agent Execution with opencode CLI)
+Plan: 2/2 completed
+Status: Complete
+Last activity: 2026-02-12 — Completed 03-02 (Agent Cancellation Support)
 
-Progress: [███████░░░░░░░] 1/2 plans (50%)
+Progress: [██████████████] 2/2 plans (100%)
 
 ## Performance Metrics
 
@@ -30,6 +30,7 @@ Progress: [███████░░░░░░░] 1/2 plans (50%)
 | Phase 02 P03 | 193 | 3 tasks | 7 files |
 | 02-05 | 8m 16s   | 3     | 2     |
 | 03-01 | 2m       | 3     | 4     |
+| 03-02 | 45m      | 2     | 3     |
 
 ## Decisions Made
 
@@ -211,6 +212,21 @@ Progress: [███████░░░░░░░] 1/2 plans (50%)
 54. **Use process.cwd() as working directory** (03-01)
     - Rationale: Simple starting point (Next.js project root). Workspace/project selection deferred to later phase.
 
+55. **Use AbortSignal for cancellation** (03-02)
+    - Rationale: Standard web API with automatic propagation through fetch and execa. No custom cancellation logic needed.
+
+56. **Cancel Execution button visibility during execution** (03-02)
+    - Rationale: Show button when isExecuting=true, hide during cancellation (isCancelling=true) to prevent duplicate cancel clicks.
+
+57. **Fixed execa v9 API: signal → cancelSignal** (03-02)
+    - Rationale: execa v9.x renamed signal option to cancelSignal. Updated to use correct option name for abort signal propagation.
+
+58. **Check abortSignal.aborted in iteration loop** (03-02)
+    - Rationale: Early detection at start of each stdout line processing provides fastest cancellation response. User sees cancellation within one iteration cycle.
+
+59. **Distinguish cancellation from errors in catch block** (03-02)
+    - Rationale: Cancellation is user-initiated (not an error). Separate check yields cancellation event instead of error event for correct UI state.
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -352,10 +368,22 @@ Progress: [███████░░░░░░░] 1/2 plans (50%)
 - Stub agent replaced with real implementation
 - Ready for progress visualization UI (spinners, tool call display, error surfacing)
 
+**Agent Cancellation Support (03-02):**
+- Cancel Execution button appears in AgentRequestCard during agent execution
+- Button shows "Cancelling..." state during termination, disabled to prevent duplicate clicks
+- AbortSignal propagation: client AbortController → fetch request → API → agent process
+- Agent checks abortSignal.aborted in iteration loop before processing each stdout line
+- Early abort detection provides fastest cancellation (within one iteration cycle)
+- Distinguishes cancellation from errors in catch block (yields cancellation event, not error)
+- execa cancelSignal option handles actual process termination (SIGTERM → SIGKILL after 5s)
+- Clean termination with no zombie processes
+- UI state management: isExecuting, isCancelling flags control button visibility
+- User-initiated cancellation (EXEC-10) and clean cleanup (EXEC-11) implemented
+
 ## Session Info
 
-Last session: 2026-02-12T08:41:26Z
-Stopped at: Completed 03-01-PLAN.md (Real Agent Execution with opencode CLI)
+Last session: 2026-02-12T09:45:00Z
+Stopped at: Completed 03-02-PLAN.md (Agent Cancellation Support) - Phase 3 Complete
 
 ---
 *Last updated: 2026-02-12*

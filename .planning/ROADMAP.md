@@ -110,6 +110,8 @@ Plans:
 
 **Goal:** System spawns opencode CLI agents and captures their output, surfacing execution status to users.
 
+**Status:** ✓ Complete (2026-02-12)
+
 **Duration Estimate:** 2-3 weeks
 
 **Requirements:** EXEC-01, EXEC-02, EXEC-07, EXEC-08, EXEC-09, EXEC-10, EXEC-11 (7 requirements)
@@ -117,8 +119,8 @@ Plans:
 **Plans:** 2 plans in 2 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — Real opencode agent with process spawning and error handling
-- [ ] 03-02-PLAN.md — Cancellation support with clean process termination
+- [x] 03-01-PLAN.md — Real opencode agent with process spawning and error handling
+- [x] 03-02-PLAN.md — Cancellation support with clean process termination
 
 **Deliverables:**
 - CLI agent spawning and process management
