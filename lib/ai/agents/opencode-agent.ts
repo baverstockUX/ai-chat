@@ -76,39 +76,106 @@ export async function* executeOpencodeAgent(
       }
     })();
 
+    // Yield start event immediately
+    yield {
+      type: 'text',
+      timestamp: Date.now(),
+      content: 'Agent started executing task...',
+    };
+
+    // Track last event time for heartbeat and timeout warnings
+    let lastEventTime = Date.now();
+
     // Process stdout lines and yield progress updates
-    for await (const line of stdoutInterface) {
-      // Check if cancelled before processing
-      if (abortSignal?.aborted) {
-        yield {
-          type: 'complete',
-          timestamp: Date.now(),
-          content: 'Agent execution cancelled by user',
-          success: false,
-        };
-        break; // Exit iteration loop
+    // Wrap in a Promise.race to enable heartbeat checking
+    let heartbeatTimer: NodeJS.Timeout | null = null;
+    let lineIterator = stdoutInterface[Symbol.asyncIterator]();
+
+    try {
+      while (true) {
+        // Check if cancelled before processing
+        if (abortSignal?.aborted) {
+          yield {
+            type: 'complete',
+            timestamp: Date.now(),
+            content: 'Agent execution cancelled by user',
+            success: false,
+          };
+          break; // Exit iteration loop
+        }
+
+        // Set up heartbeat promise that resolves after 2 seconds
+        const heartbeatPromise = new Promise<{ value: undefined; done: true; isHeartbeat: true }>((resolve) => {
+          heartbeatTimer = setTimeout(() => {
+            resolve({ value: undefined, done: true, isHeartbeat: true });
+          }, 2000);
+        });
+
+        // Race between next line and heartbeat
+        const result = await Promise.race([
+          lineIterator.next().then(r => ({ ...r, isHeartbeat: false })),
+          heartbeatPromise,
+        ]);
+
+        // Clear the heartbeat timer
+        if (heartbeatTimer) {
+          clearTimeout(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+
+        // Handle heartbeat
+        if (result.isHeartbeat) {
+          const now = Date.now();
+          if (now - lastEventTime > 2000) {
+            // Yield heartbeat if no events in last 2 seconds
+            yield {
+              type: 'text',
+              timestamp: now,
+              content: 'Agent still working...',
+            };
+            lastEventTime = now;
+          }
+          continue; // Continue to next iteration
+        }
+
+        // Check if iteration is done
+        if (result.done) {
+          break;
+        }
+
+        const line = result.value;
+        if (!line.trim()) continue;
+
+        // Update last event time
+        lastEventTime = Date.now();
+
+        try {
+          const event = JSON.parse(line);
+
+          // Transform opencode JSON events to AgentProgressUpdate
+          const update: AgentProgressUpdate = {
+            type: mapEventType(event.type),
+            timestamp: event.timestamp || Date.now(),
+            content: event.content || event.message || '',
+            toolName: event.tool || event.toolName,
+            success: event.success,
+          };
+
+          yield update;
+        } catch (parseError) {
+          // Treat non-JSON output as plain text instead of just logging
+          console.warn('[opencode-agent] Non-JSON output, treating as plain text:', line);
+          yield {
+            type: 'text',
+            timestamp: Date.now(),
+            content: line,
+          };
+        }
       }
-
-      if (!line.trim()) continue;
-
-      try {
-        const event = JSON.parse(line);
-
-        // Transform opencode JSON events to AgentProgressUpdate
-        const update: AgentProgressUpdate = {
-          type: mapEventType(event.type),
-          timestamp: event.timestamp || Date.now(),
-          content: event.content || event.message || '',
-          toolName: event.tool || event.toolName,
-          success: event.success,
-        };
-
-        yield update;
-      } catch (parseError) {
-        // Log parse error but don't fail entire stream
-        console.error('[opencode-agent] Failed to parse output line:', line);
-        console.error('[opencode-agent] Parse error:', parseError);
-        // Continue processing remaining output
+    } finally {
+      // Clean up heartbeat timer
+      if (heartbeatTimer) {
+        clearTimeout(heartbeatTimer);
       }
     }
 
