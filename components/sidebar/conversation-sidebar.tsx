@@ -6,10 +6,13 @@ import { SidebarHeader } from './sidebar-header';
 import { ConversationSearch } from './conversation-search';
 import { ConversationList } from './conversation-list';
 import { UserMenu } from '@/components/auth/user-menu';
-import { useState } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Conversation } from '@/lib/db/schema';
+import { createConversation } from '@/app/(chat)/actions';
+import { toast } from 'sonner';
+import { isRedirectError } from '@/lib/utils';
 
 /**
  * Main sidebar component with collapsible behavior
@@ -28,11 +31,27 @@ export function ConversationSidebar({ conversations, userEmail }: ConversationSi
   const isMobile = useMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>(conversations);
+  const [isPending, startTransition] = useTransition();
 
   const handleClose = () => {
     if (isMobile) {
       close();
     }
+  };
+
+  const handleNewConversation = () => {
+    startTransition(async () => {
+      try {
+        await createConversation();
+      } catch (error) {
+        // Ignore redirect errors (successful navigation)
+        if (isRedirectError(error)) {
+          return;
+        }
+        console.error('Failed to create conversation:', error);
+        toast.error('Failed to create conversation');
+      }
+    });
   };
 
   if (isMobile) {
@@ -59,16 +78,27 @@ export function ConversationSidebar({ conversations, userEmail }: ConversationSi
           `}
         >
           <div className="flex flex-col h-full overflow-hidden">
-            {/* Mobile header with close button */}
+            {/* Mobile header with new chat and close button */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Conversations</h2>
-              <button
-                onClick={handleClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                aria-label="Close sidebar"
-              >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleNewConversation}
+                  disabled={isPending}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+                  aria-label="New conversation"
+                  title="New conversation"
+                >
+                  <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  aria-label="Close sidebar"
+                >
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
             </div>
 
             <ConversationSearch
@@ -116,7 +146,21 @@ export function ConversationSidebar({ conversations, userEmail }: ConversationSi
       </button>
       {isOpen && (
         <div className="flex flex-col h-full overflow-hidden">
-          <SidebarHeader showToggle={false} />
+          {/* Desktop header with new chat button */}
+          <div className="flex items-center justify-between p-4 pr-14 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Conversations
+            </h2>
+            <button
+              onClick={handleNewConversation}
+              disabled={isPending}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+              aria-label="New conversation"
+              title="New conversation"
+            >
+              <Plus className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            </button>
+          </div>
           <ConversationSearch
             onSearchChange={setSearchQuery}
             onFilteredResults={setFilteredConversations}

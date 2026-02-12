@@ -72,7 +72,11 @@ export async function POST(req: Request) {
     const contextPrompt = await formatContextForPrompt(activeConversationId);
 
     // Detect intent before streaming
+    console.log('[Chat API] Calling detectIntent...');
+    const intentStartTime = Date.now();
     const intent = await detectIntent(messages);
+    console.log(`[Chat API] detectIntent completed in ${Date.now() - intentStartTime}ms`);
+    console.log('[Chat API] Intent result:', JSON.stringify(intent, null, 2));
 
     // If intent is agent_summon, save agent request message and return JSON
     if (intent.intent === 'agent_summon') {

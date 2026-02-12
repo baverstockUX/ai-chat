@@ -25,6 +25,9 @@ interface MessageListProps {
   conversationId?: string;
   onApprove?: (messageId: string) => Promise<void>;
   onCancel?: (messageId: string) => Promise<void>;
+  onCancelExecution?: (messageId: string) => Promise<void>;
+  executingAgentMessageId?: string | null;
+  cancellingAgentMessageId?: string | null;
 }
 
 const SAMPLE_SUGGESTIONS = [
@@ -52,6 +55,9 @@ export function MessageList({
   conversationId,
   onApprove,
   onCancel,
+  onCancelExecution,
+  executingAgentMessageId,
+  cancellingAgentMessageId,
 }: MessageListProps) {
   // Determine if message should be grouped with previous
   const shouldGroupWithPrevious = (currentIndex: number): boolean => {
@@ -113,6 +119,9 @@ export function MessageList({
                   conversationId={conversationId}
                   onApprove={onApprove}
                   onCancel={onCancel}
+                  onCancelExecution={onCancelExecution}
+                  isExecuting={executingAgentMessageId === message.id}
+                  isCancelling={cancellingAgentMessageId === message.id}
                 />
               </div>
             );
