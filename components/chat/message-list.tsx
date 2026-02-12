@@ -86,8 +86,13 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
             />
           ))}
 
-          {/* Typing indicator - show when loading and last message is from user */}
-          {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
+          {/* Typing indicator - show when loading and assistant hasn't started responding */}
+          {isLoading && messages.length > 0 && (() => {
+            const lastMsg = messages[messages.length - 1];
+            // Show indicator if last message is from user (waiting for response)
+            // or if assistant message exists but has no content yet (stream starting)
+            return lastMsg?.role === 'user' || (lastMsg?.role === 'assistant' && !(lastMsg as any).content);
+          })() && (
             <div className="flex gap-3">
               <div className="w-8" /> {/* Spacer for alignment with AI messages */}
               <TypingIndicator />

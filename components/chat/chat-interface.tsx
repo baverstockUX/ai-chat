@@ -64,6 +64,7 @@ export function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   const newConversationIdRef = useRef<string | null>(null);
+  const hasSentInitialPrompt = useRef(false);
   const [executingAgentMessageId, setExecutingAgentMessageId] = useState<string | null>(null);
   const [cancellingAgentMessageId, setCancellingAgentMessageId] = useState<string | null>(null);
   const agentControllerRef = useRef<AbortController | null>(null);
@@ -87,21 +88,29 @@ export function ChatInterface({
         createdAt: new Date(),
       };
 
-      const nextMessages = [...messages, userMessage];
-      setMessages(nextMessages);
+      // Use functional update to avoid stale closure over messages
+      setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
 
       const controller = new AbortController();
       controllerRef.current = controller;
 
       try {
+        // Read current messages via functional ref to avoid stale closure
+        const currentMessages = await new Promise<typeof messages>((resolve) => {
+          setMessages((prev) => {
+            resolve(prev);
+            return prev;
+          });
+        });
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            messages: nextMessages.map((m) => ({
+            messages: currentMessages.map((m) => ({
               role: m.role,
               content: m.content,
             })),
@@ -143,7 +152,7 @@ export function ChatInterface({
 
           // Redirect after agent request if new conversation
           if (!conversationId && newConversationIdRef.current) {
-            router.push(`/${newConversationIdRef.current}`);
+            window.history.replaceState(null, '', `/${newConversationIdRef.current}`);
             newConversationIdRef.current = null;
           }
 
@@ -157,22 +166,22 @@ export function ChatInterface({
           return;
         }
 
+        // Create the assistant message placeholder and add it to state immediately
+        const assistantMessageId = crypto.randomUUID();
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantMessageId,
+            role: 'assistant' as const,
+            content: '',
+            createdAt: new Date(),
+          },
+        ]);
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let assistantText = '';
         let buffer = '';
-
-        // Create streaming message with temp ID
-        const streamingMessageId = crypto.randomUUID();
-        const streamingMessage = {
-          id: streamingMessageId,
-          role: 'assistant' as const,
-          content: '',
-          createdAt: new Date(),
-        };
-
-        // Add empty streaming message to state immediately
-        setMessages((prev) => [...prev, streamingMessage]);
 
         while (true) {
           const { done, value } = await reader.read();
@@ -182,6 +191,7 @@ export function ChatInterface({
 
           // Process complete lines from SSE stream
           let newlineIndex: number;
+          let hasNewContent = false;
           while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
             const line = buffer.slice(0, newlineIndex).trim();
             buffer = buffer.slice(newlineIndex + 1);
@@ -196,35 +206,32 @@ export function ChatInterface({
 
               if (event.type === 'text-delta' && typeof event.delta === 'string') {
                 assistantText += event.delta;
-
-                // Update streaming message in state immediately
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === streamingMessageId
-                      ? { ...msg, content: assistantText }
-                      : msg
-                  )
-                );
+                hasNewContent = true;
               }
             } catch {
               // Ignore malformed lines
             }
           }
+
+          // Update state incrementally so Streamdown can render progressively
+          if (hasNewContent) {
+            const snapshot = assistantText;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? { ...msg, content: snapshot }
+                  : msg
+              )
+            );
+          }
         }
 
-        // Streaming message already in state with final content
-        // Just ensure it has the final text (in case last chunk was missed)
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === streamingMessageId
-              ? { ...msg, content: assistantText }
-              : msg
-          )
-        );
-
-        // Now redirect after streaming completes and messages are in local state
+        // For new conversations, use history.replaceState to update the URL
+        // without triggering a full navigation/remount. This avoids the race
+        // condition where router.push would re-fetch from the DB before the
+        // onFinish callback has persisted the messages.
         if (!conversationId && newConversationIdRef.current) {
-          router.push(`/${newConversationIdRef.current}`);
+          window.history.replaceState(null, '', `/${newConversationIdRef.current}`);
           newConversationIdRef.current = null;
         }
       } catch (err) {
@@ -235,13 +242,13 @@ export function ChatInterface({
         setIsLoading(false);
       }
     },
-    [conversationId, isLoading, messages, router]
+    [conversationId, isLoading]
   );
 
   // Auto-send initial prompt (e.g., from sample prompt click)
   useEffect(() => {
-    if (initialPrompt && messages.length === 0) {
-      console.log('[ChatInterface] Auto-sending initial prompt:', initialPrompt);
+    if (initialPrompt && messages.length === 0 && !hasSentInitialPrompt.current) {
+      hasSentInitialPrompt.current = true;
       handleSend(initialPrompt);
     }
   }, [initialPrompt, messages.length, handleSend]);
