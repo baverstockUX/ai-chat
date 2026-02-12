@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 5 — Resources Management and Sharing (05)
-Plan: 5/6 completed
-Status: In Progress
-Last activity: 2026-02-12 — Completed 05-05 (Resource Fork and Execute)
+Plan: 6/6 completed
+Status: Complete
+Last activity: 2026-02-12 — Completed 05-06 (Multimodal Input & Web Search)
 
-Progress: [███████████░░░] 5/6 plans (83%)
+Progress: [██████████████] 6/6 plans (100%)
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Progress: [███████████░░░] 5/6 plans (83%)
 | Phase 05 P04 | 3m 25s | 3 tasks | 3 files |
 | Phase 05 P03 | 207s | 4 tasks | 7 files |
 | Phase 05 P05 | 153 | 3 tasks | 6 files |
+| Phase 05 P06 | 3m 22s | 3 tasks | 7 files |
 
 ## Decisions Made
 
@@ -295,6 +296,18 @@ Progress: [███████████░░░] 5/6 plans (83%)
 79. **executeResource validates ownership before execution** (05-05)
     - Rationale: Only resource owner can execute (shared users must fork first)
 
+80. **Use DuckDuckGo Instant Answer API for web search** (05-06)
+    - Rationale: Free API with no key requirement, returns structured JSON with abstracts and related topics
+
+81. **Store attachments as JSONB array for flexible multi-type support** (05-06)
+    - Rationale: Flexible schema supports multiple attachment types (images, files, links) without schema changes
+
+82. **Build multimodal message array for Gemini vision capabilities** (05-06)
+    - Rationale: Gemini expects content array with type/text/image objects for vision capabilities
+
+83. **Detect search intent via keyword matching** (05-06)
+    - Rationale: Simple pattern matching for "search for", "look up", "search:" provides reliable detection without AI overhead
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -519,10 +532,26 @@ Progress: [███████████░░░] 5/6 plans (83%)
 - REST API endpoint at /api/resources/[id]/execute for future integrations
 - Complete resource lifecycle: create → save → share → fork → execute
 
+**Multimodal Input & Web Search (05-06):**
+- DuckDuckGo search integration via Instant Answer API (free, no key required)
+- searchWeb function fetches and parses RelatedTopics and Abstract
+- Search API route at /api/search with auth, query validation, context formatting
+- Search intent detection in chat API via keyword matching (search for/look up/search:)
+- Search results injected into system prompt as contextPrompt
+- ImageUploader component with FileReader preview, validation, upload button
+- Client-side validation: type (JPEG/PNG/GIF/WebP), size (10MB max)
+- MessageInput enhanced with image attachment support and preview display
+- ChatInterface passes imageUrl to chat API
+- createMessage function accepts optional attachments parameter
+- Message.attachments JSONB field populated with [{ type: 'image', url }]
+- Multimodal message array building for Gemini vision capabilities
+- Content array format: [{ type: 'text', text }, { type: 'image', image: url }]
+- Complete INPUT requirements: image upload, AI analysis, web search integration
+
 ## Session Info
 
-Last session: 2026-02-12T21:36:34Z
-Stopped at: Completed 05-05-PLAN.md (Resource Fork and Execute)
+Last session: 2026-02-12T22:02:00Z
+Stopped at: Completed 05-06-PLAN.md (Multimodal Input & Web Search)
 
 ---
 *Last updated: 2026-02-12*
