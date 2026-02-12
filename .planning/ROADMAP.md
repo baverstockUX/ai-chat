@@ -198,6 +198,16 @@ Plans:
 
 **Requirements:** RES-01 through RES-12, INPUT-01 through INPUT-06 (18 requirements)
 
+**Plans:** 6 plans in 3 waves
+
+Plans:
+- [ ] 05-01-PLAN.md — Database schema for resources (tables, queries, migration)
+- [ ] 05-02-PLAN.md — Image upload infrastructure (Server Action, filesystem storage)
+- [ ] 05-03-PLAN.md — Resource save and browser (save dialog, resource list, search/filter)
+- [ ] 05-04-PLAN.md — Resource sharing (shareable links, token-based access)
+- [ ] 05-05-PLAN.md — Fork and execute resources (lineage tracking, workflow execution)
+- [ ] 05-06-PLAN.md — Web search and image upload UI (DuckDuckGo, chat integration)
+
 **Deliverables:**
 - Resource save functionality
 - Resources browser with search/filter
