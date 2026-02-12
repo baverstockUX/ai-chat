@@ -44,7 +44,7 @@ export async function* executeOpencodeAgent(
         buffer: false, // Prevent memory leaks on large output
         reject: false, // Don't throw on non-zero exit
         shell: false, // Prevent shell injection
-        signal: abortSignal,
+        cancelSignal: abortSignal,
         env: {
           PATH: process.env.PATH,
           CI: '1',
