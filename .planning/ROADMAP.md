@@ -159,10 +159,11 @@ Plans:
 
 **Requirements:** EXEC-03, EXEC-04, EXEC-05, EXEC-06 (4 requirements)
 
-**Plans:** 1 gap closure plan in 1 wave
+**Plans:** 2 gap closure plans in 1 wave
 
 Plans:
 - [x] 04-02-PLAN.md — Fix SSE metadata sync for real-time execution visualization
+- [ ] 04-03-PLAN.md — Add agent_progress message routing to MessageList
 
 **Deliverables:**
 - Real-time WebSocket/SSE streaming
