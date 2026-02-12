@@ -110,7 +110,7 @@ export function Message({ message, isGrouped = false }: MessageProps) {
             )}
           >
             {/* Timestamp */}
-            <span>{formatRelativeTime(new Date())}</span>
+            <span>{formatRelativeTime((message as any).createdAt ?? new Date())}</span>
 
             {/* Message actions - visible on hover (desktop) or tap (mobile) */}
             {((isMobile && showMobileActions) || (!isMobile && isHovered)) && (

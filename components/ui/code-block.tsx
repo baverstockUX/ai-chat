@@ -27,7 +27,6 @@ interface CodeBlockProps {
 export function CodeBlock({ children, className, language, inline = false }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   const [highlightedCode, setHighlightedCode] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
 
   // Extract language from className (format: "language-xxx")
   const detectedLang = className?.replace(/language-/, '') || language || 'text';
@@ -48,20 +47,17 @@ export function CodeBlock({ children, className, language, inline = false }: Cod
 
     const highlight = async () => {
       try {
-        setIsLoading(true);
         const html = await codeToHtml(code, {
           lang: detectedLang,
           theme: 'github-dark',
         });
         if (isMounted) {
           setHighlightedCode(html);
-          setIsLoading(false);
         }
       } catch (error) {
         // If language not supported, fall back to plain code block
         if (isMounted) {
           setHighlightedCode('');
-          setIsLoading(false);
         }
       }
     };
@@ -80,19 +76,6 @@ export function CodeBlock({ children, className, language, inline = false }: Cod
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  if (isLoading) {
-    return (
-      <div className="relative my-4">
-        <div className="flex items-center justify-between px-4 py-2 bg-gray-800 rounded-t-lg border-b border-gray-700">
-          <span className="text-xs text-gray-400 font-mono">{detectedLang}</span>
-        </div>
-        <pre className="bg-gray-900 text-gray-100 p-4 rounded-b-lg overflow-x-auto">
-          <code className="font-mono text-sm">{code}</code>
-        </pre>
-      </div>
-    );
-  }
 
   return (
     <div className="relative group my-4">
