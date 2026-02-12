@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 04-dynamic-execution-view
 source: 04-02-SUMMARY.md
 started: 2026-02-12T20:35:00Z
-updated: 2026-02-12T20:39:00Z
+updated: 2026-02-12T20:40:00Z
 ---
 
 ## Current Test
@@ -53,5 +53,10 @@ skipped: 4
   reason: "User reported: Execution view does NOT display at all. After clicking Proceed on agent request, only plain text appears: 'Agent started executing task... Agent still working... Agent still working...' The AgentExecutionView component with styled timeline, event icons, and color-coded backgrounds is not rendering. Message shows as plain paragraph text instead of execution timeline."
   severity: blocker
   test: 1
-  artifacts: []
-  missing: []
+  root_cause: "MessageList component only routes agent_request messages to MessageContent. The agent_progress messages fall through to default case (lines 131-137 in message-list-new.tsx) which uses generic Message component, treating them as plain text UIMessages. Message component does not check messageType or render AgentExecutionView."
+  artifacts:
+    - path: "components/chat/message-list-new.tsx"
+      issue: "Lines 113-128 only route agent_request, missing agent_progress case"
+  missing:
+    - "Add routing case for agent_progress messageType in MessageList component"
+  debug_session: ".planning/debug/agent-execution-view-not-rendering.md"
