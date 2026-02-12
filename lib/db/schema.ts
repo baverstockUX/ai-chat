@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb, integer } from 'drizzle-orm/pg-core';
 
 /**
  * User table - stores user authentication and profile information
@@ -41,6 +41,7 @@ export const message = pgTable('message', {
     enum: ['text', 'agent_request', 'agent_progress', 'agent_result']
   }).default('text').notNull(),
   metadata: jsonb('metadata'),
+  attachments: jsonb('attachments'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -61,6 +62,49 @@ export const conversationContext = pgTable('conversation_context', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+/**
+ * Resource table - stores reusable agent workflows, prompts, and agent configurations
+ * Enables users to save and share workflows with fork lineage tracking
+ * Supports RES-01 through RES-05 (Resource Management and Sharing)
+ */
+export const resource = pgTable('resource', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  resourceType: varchar('resource_type', {
+    length: 50,
+    enum: ['workflow', 'prompt', 'agent_config']
+  }).default('workflow').notNull(),
+  content: jsonb('content').notNull(),
+  executionCount: integer('execution_count').default(0).notNull(),
+  lastExecutedAt: timestamp('last_executed_at'),
+  parentResourceId: uuid('parent_resource_id').references(() => resource.id, { onDelete: 'set null' }),
+  forkCount: integer('fork_count').default(0).notNull(),
+  isPublic: boolean('is_public').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/**
+ * Resource Share table - stores token-based sharing for resources
+ * Enables secure sharing via unique tokens with optional expiration and access limits
+ * Supports RES-04 (Token-based Sharing)
+ */
+export const resourceShare = pgTable('resource_share', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  resourceId: uuid('resource_id')
+    .notNull()
+    .references(() => resource.id, { onDelete: 'cascade' }),
+  shareToken: varchar('share_token', { length: 32 }).notNull().unique(),
+  expiresAt: timestamp('expires_at'),
+  accessCount: integer('access_count').default(0).notNull(),
+  maxAccesses: integer('max_accesses'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Type exports for use in application code
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
@@ -73,3 +117,9 @@ export type NewMessage = typeof message.$inferInsert;
 
 export type ConversationContext = typeof conversationContext.$inferSelect;
 export type NewConversationContext = typeof conversationContext.$inferInsert;
+
+export type Resource = typeof resource.$inferSelect;
+export type NewResource = typeof resource.$inferInsert;
+
+export type ResourceShare = typeof resourceShare.$inferSelect;
+export type NewResourceShare = typeof resourceShare.$inferInsert;
