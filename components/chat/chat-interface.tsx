@@ -372,7 +372,7 @@ export function ChatInterface({
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === progressMessageId
-                    ? { ...msg, content: content.trim() }
+                    ? { ...msg, content: content.trim(), metadata: { updates } }
                     : msg
                 )
               );

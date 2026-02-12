@@ -26,3 +26,16 @@ export interface AgentRequestMetadata {
   requiresExtraConfirm: boolean;
   requestedAt: string;
 }
+
+/**
+ * Progress update emitted during agent execution
+ * Used for real-time visualization in execution timeline
+ */
+export interface AgentProgressUpdate {
+  type: 'text' | 'tool_call' | 'tool_result' | 'complete';
+  timestamp: string;
+  content: string;
+  toolName?: string;
+  success?: boolean;
+  recovery?: string;
+}

@@ -2,6 +2,8 @@
 
 import { AgentRequestCard, AgentRequestMetadata } from './agent-request-card';
 import { StreamingResponse } from './streaming-response';
+import { AgentExecutionView } from './agent-execution-view';
+import type { AgentProgressUpdate } from '@/lib/types/agent';
 
 interface Message {
   id: string;
@@ -63,13 +65,12 @@ export function MessageContent({
     );
   }
 
-  // Handle agent_progress messages (future implementation)
+  // Handle agent_progress messages with execution view
   if (message.messageType === 'agent_progress') {
-    return (
-      <div className="text-sm text-muted-foreground">
-        {message.content}
-      </div>
-    );
+    const metadata = message.metadata as { updates?: AgentProgressUpdate[] } | undefined;
+    const updates = metadata?.updates || [];
+
+    return <AgentExecutionView updates={updates} isLive={true} />;
   }
 
   // Handle agent_result messages (future implementation)
