@@ -64,9 +64,20 @@ Plans:
 
 **Goal:** AI intelligently decides when to respond conversationally vs. summon an agent, establishing the core "magic" of the interface.
 
+**Status:** ✓ Complete (2026-02-11)
+
 **Duration Estimate:** 2-3 weeks
 
 **Requirements:** ORCH-01 through ORCH-07 (7 requirements)
+
+**Plans:** 5 plans in 3 waves
+
+Plans:
+- [x] 02-01-PLAN.md — Database schema for orchestration (message types, context memory)
+- [x] 02-02-PLAN.md — Intent classification system with structured output
+- [x] 02-03-PLAN.md — Agent confirmation UI with Proceed/Cancel
+- [x] 02-04-PLAN.md — Context memory system for cross-session adaptation
+- [x] 02-05-PLAN.md — Agent execution with mock streaming (checkpoint)
 
 **Deliverables:**
 - Intent classification system (chat vs build detection)
@@ -99,9 +110,17 @@ Plans:
 
 **Goal:** System spawns opencode CLI agents and captures their output, surfacing execution status to users.
 
+**Status:** ✓ Complete (2026-02-12)
+
 **Duration Estimate:** 2-3 weeks
 
 **Requirements:** EXEC-01, EXEC-02, EXEC-07, EXEC-08, EXEC-09, EXEC-10, EXEC-11 (7 requirements)
+
+**Plans:** 2 plans in 2 waves
+
+Plans:
+- [x] 03-01-PLAN.md — Real opencode agent with process spawning and error handling
+- [x] 03-02-PLAN.md — Cancellation support with clean process termination
 
 **Deliverables:**
 - CLI agent spawning and process management

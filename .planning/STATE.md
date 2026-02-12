@@ -2,12 +2,12 @@
 
 ## Current Position
 
-Phase: Phase 1 — Chat Foundation & Authentication (01)
-Plan: 11/13 completed
-Status: In Progress
-Last activity: 2026-02-11 — Completed 01-11 (Sidebar Toggle Persistence)
+Phase: Phase 3 — Agent Execution & Basic Visibility (03)
+Plan: 3/3 completed
+Status: Complete
+Last activity: 2026-02-12 — Completed 03-03 (Fix Agent Progress Streaming & Cancellation UX)
 
-Progress: [████████░░░░░] 11/13 plans (85%)
+Progress: [██████████████] 3/3 plans (100%)
 
 ## Performance Metrics
 
@@ -24,6 +24,14 @@ Progress: [████████░░░░░] 11/13 plans (85%)
 | 01-09 | 3m 20s   | 2     | 2     |
 | 01-11 | 17m 31s  | 1     | 4     |
 | 01-13 | 5m 7s    | 4     | 5     |
+| 02-01 | 3m 33s   | 3     | 3     |
+| 02-02 | 2m 52s   | 3     | 5     |
+| 02-04 | 1m 58s   | 3     | 4     |
+| Phase 02 P03 | 193 | 3 tasks | 7 files |
+| 02-05 | 8m 16s   | 3     | 2     |
+| 03-01 | 2m       | 3     | 4     |
+| 03-02 | 45m      | 2     | 3     |
+| 03-03 | 3m 26s   | 3     | 2     |
 
 ## Decisions Made
 
@@ -122,7 +130,118 @@ Progress: [████████░░░░░] 11/13 plans (85%)
 
 32. **useEffect with messages.length === 0 guard** (01-13)
     - Rationale: Ensures prompt only sends once on mount, prevents duplicate sends if component re-renders
-- [Phase 01]: Use absolute positioning for toggle button instead of collapsed strip
+
+33. **Use absolute positioning for toggle button** (01-11)
+    - Rationale: Simplest solution that works across both open and collapsed states without maintaining collapsed strip width
+
+34. **Use JSONB for message metadata instead of separate columns** (02-01)
+    - Rationale: Different message types need different metadata structures. JSONB provides flexibility without schema changes.
+
+35. **Store context with upsert pattern (conversationId + contextKey as conflict target)** (02-01)
+    - Rationale: Enables updating context as it evolves. Prevents duplicate context entries per conversation.
+
+36. **Include contextType field for efficient filtering** (02-01)
+    - Rationale: Allows loading only specific context types without scanning all context entries.
+
+34. **Use AI SDK Output.object() for structured responses** (02-02)
+    - Rationale: Leverages Gemini's native structured output with Zod validation for type-safe intent detection
+
+35. **Return JSON (not stream) for agent_summon intent** (02-02)
+    - Rationale: Agent requests require synchronous confirmation UI, not streaming text
+
+36. **Save user message before intent detection response** (02-02)
+    - Rationale: Ensures message persistence even if user cancels agent request
+
+37. **Use AI-powered extraction instead of regex patterns for domain knowledge** (02-04)
+    - Rationale: Handles natural language variations, identifies implicit context, extracts structured data, more maintainable than extensive regex rule sets
+
+38. **Set confidence threshold at 0.7 to prevent false positives** (02-04)
+    - Rationale: Ensures stored context is meaningful and actionable, prevents clutter from ambiguous mentions
+
+39. **Process last 10 messages to respect token limits** (02-04)
+    - Rationale: Recent messages more relevant for current context, reduces extraction latency, user-specified requirement
+
+40. **Inject context directly into system prompt rather than separate message** (02-04)
+    - Rationale: Simpler than managing separate context message, ensures context always visible to model, standard pattern for prompt augmentation
+
+41. **Non-blocking context extraction (errors don't fail chat response)** (02-04)
+    - Rationale: Chat functionality more critical than context storage, user receives response even if extraction fails
+
+42. **Use async generator for stub agent progress** (02-05)
+    - Rationale: Enables clean iteration with for-await-of, natural fit for streaming progress updates
+
+43. **Four progress update types: text, tool_call, tool_result, complete** (02-05)
+    - Rationale: Covers all agent execution phases, provides rich UI feedback capability
+
+44. **Server-Sent Events for streaming agent progress** (02-05)
+    - Rationale: Standard protocol with automatic reconnection, simpler than WebSockets for unidirectional streaming
+
+45. **maxDuration 60s for agent execution API** (02-05)
+    - Rationale: Prevents timeout on complex agent tasks, balances performance and resource usage
+
+46. **Message lookup pattern in execute API** (02-05)
+    - Rationale: Retrieves original agent request from database for context, enables proper integration with chat history
+
+- [Phase 02-03]: Use shadcn Card component for agent request display
+- [Phase 02-03]: Conditional border colors based on destructive flag (blue for safe, red for destructive)
+- [Phase 02-03]: Destructive operations require checkbox confirmation before Proceed enabled
+- [Phase 02-03]: Cancel action sends follow-up message asking for alternatives
+- [Phase 02-03]: MessageContent component routes by messageType for extensibility
+- [Phase 02-03]: Agent execute API endpoint stubbed (full implementation in Plan 02-05)
+
+47. **Use execa v9.6.1 for opencode process spawning** (03-01)
+    - Rationale: Production-standard library handles encoding, signals, streams, error codes better than raw child_process. Solves common pitfalls (partial reads, zombie processes, shell injection).
+
+48. **Parse stdout line-by-line with readline.createInterface** (03-01)
+    - Rationale: Handles partial chunks correctly with crlfDelay: Infinity. Prevents "unexpected end of JSON" errors from splitting JSON across TCP packets.
+
+49. **Collect stderr separately in background** (03-01)
+    - Rationale: Concurrent processing prevents blocking. Preserves error context for diagnostics while allowing stdout to stream immediately.
+
+50. **Map exit codes to user-friendly recovery suggestions** (03-01)
+    - Rationale: Generic errors unhelpful. Exit code 127 = "install opencode", ENOENT = "command not found", API key errors = "re-authenticate" provides actionable guidance.
+
+51. **Set buffer: false to prevent memory leaks** (03-01)
+    - Rationale: Long-running agents (10+ min) would accumulate unbounded output in memory. Streaming prevents memory issues.
+
+52. **Set shell: false to prevent shell injection** (03-01)
+    - Rationale: User input in taskDescription could contain shell metacharacters. shell: false ensures args passed directly to process, not through shell interpreter.
+
+53. **Pass req.signal for automatic cancellation** (03-01)
+    - Rationale: User navigates away → request aborted → req.signal fires → execa kills process → no zombie processes. Clean lifecycle management.
+
+54. **Use process.cwd() as working directory** (03-01)
+    - Rationale: Simple starting point (Next.js project root). Workspace/project selection deferred to later phase.
+
+55. **Use AbortSignal for cancellation** (03-02)
+    - Rationale: Standard web API with automatic propagation through fetch and execa. No custom cancellation logic needed.
+
+56. **Cancel Execution button visibility during execution** (03-02)
+    - Rationale: Show button when isExecuting=true, hide during cancellation (isCancelling=true) to prevent duplicate cancel clicks.
+
+57. **Fixed execa v9 API: signal → cancelSignal** (03-02)
+    - Rationale: execa v9.x renamed signal option to cancelSignal. Updated to use correct option name for abort signal propagation.
+
+58. **Check abortSignal.aborted in iteration loop** (03-02)
+    - Rationale: Early detection at start of each stdout line processing provides fastest cancellation response. User sees cancellation within one iteration cycle.
+
+59. **Distinguish cancellation from errors in catch block** (03-02)
+    - Rationale: Cancellation is user-initiated (not an error). Separate check yields cancellation event instead of error event for correct UI state.
+
+60. **Use Promise.race for heartbeat mechanism** (03-03)
+    - Rationale: Async generators can't yield from setInterval callbacks. Promise.race between line iterator and timeout provides clean periodic checks without blocking.
+
+61. **2-second heartbeat interval for progress updates** (03-03)
+    - Rationale: Balances user feedback needs with message spam prevention. Short enough to show liveness, long enough to avoid clutter.
+
+62. **Treat JSON parse failures as plain text** (03-03)
+    - Rationale: opencode with --format json produces non-JSON output during execution. Displaying as plain text provides visibility instead of silent execution.
+
+63. **60-second timeout matching API maxDuration** (03-03)
+    - Rationale: Consistency with server timeout prevents client-server mismatch. Provides escape hatch for dropped connections.
+
+64. **Clear timeout on all exit paths** (03-03)
+    - Rationale: Prevents timeout firing after successful completion. Moved timeoutId declaration outside try block for access in catch block.
 
 ## Accumulated Context
 
@@ -211,14 +330,88 @@ Progress: [████████░░░░░] 11/13 plans (85%)
 - Enables zero-friction start for new users
 - Sample prompts: "Help me automate a workflow", "Analyze this data", "Explain a complex concept", "Review my code"
 
+**Agent Orchestration Database Schema (02-01):**
+- Message table extended with messageType (text, agent_request, agent_progress, agent_result) and metadata (JSONB)
+- conversationContext table for cross-session memory with contextType, contextKey, contextValue fields
+- Context storage functions: storeContext (with upsert), retrieveContext, retrieveContextByType
+- JSONB storage pattern enables flexible metadata structures for different agent message types
+- Foreign key cascade delete ensures context cleanup when conversations deleted
+- Database ready for agent orchestration implementation
+
+**Agent Confirmation UI (02-03):**
+- AgentRequestCard component with conditional border colors (blue for safe, red for destructive)
+- Natural language summary with expandable details section
+- Destructive operation warnings with checkbox confirmation requirement
+- Proceed/Cancel buttons with loading states and post-action status display
+- MessageContent component routes messages by messageType (text, agent_request, agent_progress, agent_result)
+- Chat interface handles both streaming (text) and JSON (agent_request) responses
+- Agent execute API endpoint stub at /api/agent/execute (full implementation in 02-05)
+- Cancel action sends follow-up message asking for alternatives
+- User consent and transparency requirements (ORCH-02, ORCH-04) implemented
+
+**Cross-Session Context Memory (02-04):**
+- AI-powered context extraction using Gemini structured output with Zod validation
+- Context types: domain, preference, project, technology
+- Confidence threshold (>0.7) prevents false positives
+- Last 10 messages processed to respect token limits
+- formatContextForPrompt() converts stored context to prompt-ready format
+- Context loaded at conversation start and injected into system prompt
+- Non-blocking extraction after AI responses (errors don't fail chat)
+- Cross-session memory (ORCH-06) and domain adaptation (ORCH-07) implemented
+- AI remembers user's tech stack, terminology, and project details across sessions
+
+**Agent Execution Infrastructure (02-05):**
+- Stub agent with async generator returning mock progress updates
+- Four progress update types: text, tool_call, tool_result, complete
+- Agent execution API at /api/agent/execute with SSE streaming
+- Real-time progress streaming via Server-Sent Events (text/event-stream)
+- Message lookup pattern: API accepts messageId, retrieves agent request from database
+- maxDuration 60s for long-running agent operations
+- Error handling in SSE stream with proper error event type
+- Foundation ready for actual MCP agent implementation in Phase 3
+- End-to-end orchestration UX verified: intent detection → confirmation → progress streaming
+
+**Real Agent Execution (03-01):**
+- opencode CLI process spawning with execa v9.6.1 for production-grade process management
+- Spawn opencode with --format json flag for structured output
+- Line-by-line stdout parsing with readline.createInterface (handles partial chunks)
+- Concurrent stderr collection for error diagnostics (non-blocking)
+- Exit code mapping to user-friendly recovery suggestions (ENOENT, EACCES, API auth, cancellation)
+- Security hardening: buffer: false (prevents memory leaks), shell: false (prevents injection)
+- AbortSignal integration: req.signal → process cancellation → automatic cleanup
+- Real-time progress streaming via existing SSE infrastructure
+- Working directory: process.cwd() (Next.js project root)
+- Stub agent replaced with real implementation
+- Ready for progress visualization UI (spinners, tool call display, error surfacing)
+
+**Agent Cancellation Support (03-02):**
+- Cancel Execution button appears in AgentRequestCard during agent execution
+- Button shows "Cancelling..." state during termination, disabled to prevent duplicate clicks
+- AbortSignal propagation: client AbortController → fetch request → API → agent process
+- Agent checks abortSignal.aborted in iteration loop before processing each stdout line
+- Early abort detection provides fastest cancellation (within one iteration cycle)
+- Distinguishes cancellation from errors in catch block (yields cancellation event, not error)
+- execa cancelSignal option handles actual process termination (SIGTERM → SIGKILL after 5s)
+- Clean termination with no zombie processes
+- UI state management: isExecuting, isCancelling flags control button visibility
+- User-initiated cancellation (EXEC-10) and clean cleanup (EXEC-11) implemented
+
+**Agent Progress Streaming & UX (03-03):**
+- Immediate start event shown when agent begins execution
+- Heartbeat mechanism with Promise.race provides periodic updates every 2 seconds
+- Non-JSON output from opencode displayed as plain text (fallback for structured output failures)
+- Cancellation confirmation message appears after user aborts execution
+- 60-second timeout prevents indefinite "Agent working..." state if connection drops
+- Timeout shows informative message instead of silent failure
+- Timeout cleared on both success and error paths to prevent false positives
+- All UAT issues resolved: progress streaming (Test 3), completion status (Test 4), cancellation confirmation (Test 6)
+- Real-time feedback layer complete for agent execution
+
 ## Session Info
 
-Last session: 2026-02-11T11:33:24Z
-Stopped at: Completed 01-12-PLAN.md (Fix Keyboard Shortcuts Stability)
+Last session: 2026-02-12T09:41:34Z
+Stopped at: Completed 03-03-PLAN.md (Fix Agent Progress Streaming & Cancellation UX) - Phase 3 Complete
 
 ---
-*Last updated: 2026-02-11*
-
-33. **Use absolute positioning for toggle button** (01-11)
-   - Rationale: Simplest solution that works across both open and collapsed states without maintaining collapsed strip width
+*Last updated: 2026-02-12*
 

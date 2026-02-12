@@ -1,0 +1,75 @@
+import { auth } from '@/app/(auth)/auth';
+import { executeOpencodeAgent } from '@/lib/ai/agents/opencode-agent';
+import { db } from '@/lib/db';
+import { message } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+
+export const maxDuration = 60;
+export const runtime = 'nodejs';
+
+export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  try {
+    const { messageId } = await req.json();
+
+    // Look up the agent request message to get the task description
+    const [agentMessage] = await db
+      .select()
+      .from(message)
+      .where(eq(message.id, messageId))
+      .limit(1);
+
+    if (!agentMessage || agentMessage.messageType !== 'agent_request') {
+      return new Response('Agent request not found', { status: 404 });
+    }
+
+    const taskDescription = agentMessage.content || 'Execute task';
+
+    // Create Server-Sent Events stream
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+
+        try {
+          // Stream real agent progress updates
+          for await (const update of executeOpencodeAgent({
+            taskDescription,
+            workingDirectory: process.cwd(),
+            abortSignal: req.signal,
+          })) {
+            const data = `data: ${JSON.stringify(update)}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          }
+        } catch (error) {
+          console.error('Agent execution error:', error);
+          const errorData = `data: ${JSON.stringify({
+            type: 'error',
+            timestamp: Date.now(),
+            content: 'Agent execution failed',
+          })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+  } catch (error) {
+    console.error('API error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Failed to start agent execution',
+    }), { status: 500 });
+  }
+}

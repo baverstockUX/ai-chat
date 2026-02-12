@@ -51,5 +51,5 @@ export function isRedirectError(error: unknown): boolean {
     'digest' in error &&
     typeof error.digest === 'string' &&
     error.digest.startsWith('NEXT_REDIRECT')
-  )
+  );
 }

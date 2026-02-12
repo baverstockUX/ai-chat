@@ -8,7 +8,11 @@ import {
   createMessage,
   generateConversationTitle,
   updateConversationTitle,
+  formatContextForPrompt,
 } from '@/lib/db/queries';
+import { detectIntent } from '@/lib/ai/intent-classifier';
+import { extractContext } from '@/lib/ai/context-extractor';
+import type { AgentRequestMetadata } from '@/lib/types/agent';
 
 // Note: Using Node.js runtime (not Edge) because postgres library requires Node.js APIs
 // Edge Runtime doesn't support the postgres client used by Drizzle
@@ -64,11 +68,62 @@ export async function POST(req: Request) {
     // Get the user's latest message
     const userMessage = messages[messages.length - 1];
 
+    // Load context for this conversation
+    const contextPrompt = await formatContextForPrompt(activeConversationId);
+
+    // Detect intent before streaming
+    console.log('[Chat API] Calling detectIntent...');
+    const intentStartTime = Date.now();
+    const intent = await detectIntent(messages);
+    console.log(`[Chat API] detectIntent completed in ${Date.now() - intentStartTime}ms`);
+    console.log('[Chat API] Intent result:', JSON.stringify(intent, null, 2));
+
+    // If intent is agent_summon, save agent request message and return JSON
+    if (intent.intent === 'agent_summon') {
+      // Save user message first
+      await createMessage(activeConversationId, 'user', userMessage.content);
+
+      // Save agent request message with metadata
+      const agentMessage = await createMessage(
+        activeConversationId,
+        'assistant',
+        intent.summary!,
+        'agent_request',
+        {
+          summary: intent.summary,
+          actions: intent.actions,
+          destructive: intent.destructive,
+          requiresExtraConfirm: intent.requiresExtraConfirm,
+          requestedAt: new Date().toISOString(),
+        } as AgentRequestMetadata
+      );
+
+      // Generate conversation title if first message
+      if (!conversationId) {
+        const title = generateConversationTitle(userMessage.content);
+        await updateConversationTitle(activeConversationId, title);
+      }
+
+      // Return JSON response with agent request details
+      const response = Response.json({
+        type: 'agent_request',
+        message: agentMessage,
+      });
+
+      // Include conversation ID in headers for client-side redirect
+      if (!conversationId && activeConversationId) {
+        response.headers.set('X-Conversation-Id', activeConversationId);
+      }
+
+      return response;
+    }
+
+    // For chat intent, continue with existing streamText flow
     // Stream AI response
     const result = streamText({
       model: gemini,
       messages,
-      system: systemPrompt,
+      system: systemPrompt + contextPrompt, // Inject context
       abortSignal: req.signal,
       async onFinish({ text }) {
         // Save both user message and AI response to database
@@ -83,6 +138,14 @@ export async function POST(req: Request) {
           if (!conversationId) {
             const title = generateConversationTitle(userMessage.content);
             await updateConversationTitle(activeConversationId, title);
+          }
+
+          // Extract and store context from conversation
+          try {
+            await extractContext(activeConversationId, messages);
+          } catch (error) {
+            console.error('Context extraction failed:', error);
+            // Don't fail the response if context extraction errors
           }
         } catch (error) {
           console.error('Error saving messages:', error);
