@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: Phase 5 — Resources Management and Sharing (05)
-Plan: 3/6 completed
+Plan: 5/6 completed
 Status: In Progress
-Last activity: 2026-02-12 — Completed 05-04 (Resource Sharing with Token-Based Access)
+Last activity: 2026-02-12 — Completed 05-05 (Resource Fork and Execute)
 
-Progress: [███████░░░░░░░] 3/6 plans (50%)
+Progress: [███████████░░░] 5/6 plans (83%)
 
 ## Performance Metrics
 
@@ -38,6 +38,7 @@ Progress: [███████░░░░░░░] 3/6 plans (50%)
 | Phase 05 P02 | 2m 30s | 3 tasks | 3 files |
 | Phase 05 P04 | 3m 25s | 3 tasks | 3 files |
 | Phase 05 P03 | 207s | 4 tasks | 7 files |
+| Phase 05 P05 | 153 | 3 tasks | 6 files |
 
 ## Decisions Made
 
@@ -282,6 +283,18 @@ Progress: [███████░░░░░░░] 3/6 plans (50%)
 75. **Privacy: userId not exposed in share response** (05-04)
     - Rationale: Shared resources show content but not owner identity, prevents user account reconnaissance
 
+76. **Use parentResourceId for fork lineage tracking** (05-05)
+    - Rationale: Research Pattern 4 recommendation, enables "forked from X" display and fork tree queries
+
+77. **Atomic increments via sql template for forkCount and executionCount** (05-05)
+    - Rationale: Prevents race conditions when multiple users fork/execute simultaneously
+
+78. **Fork resources are private by default (isPublic: false)** (05-05)
+    - Rationale: User controls visibility, can share after reviewing/modifying their copy
+
+79. **executeResource validates ownership before execution** (05-05)
+    - Rationale: Only resource owner can execute (shared users must fork first)
+
 ## Accumulated Context
 
 **Foundation Established:**
@@ -493,10 +506,23 @@ Progress: [███████░░░░░░░] 3/6 plans (50%)
 - ResourceCard component with Share, Execute, Delete actions
 - Enables viral workflow distribution via shareable links
 
+**Resource Fork and Execute (05-05):**
+- forkResource Server Action with lineage tracking via parentResourceId
+- Atomic forkCount increment on original resource using sql template
+- Forked resources private by default (isPublic: false)
+- Fork name appends " (Fork)" to original name
+- executeResource Server Action validates ownership and extracts agent request
+- Atomic executionCount increment with lastExecutedAt timestamp
+- SharedResourcePage displays workflow preview with fork/execution stats
+- ForkDialog educates users on fork behavior (independent copy, lineage preserved)
+- ResourceCard Execute and Fork buttons with toast notifications
+- REST API endpoint at /api/resources/[id]/execute for future integrations
+- Complete resource lifecycle: create → save → share → fork → execute
+
 ## Session Info
 
-Last session: 2026-02-12T21:30:00Z
-Stopped at: Completed 05-04-PLAN.md (Resource Sharing with Token-Based Access)
+Last session: 2026-02-12T21:36:34Z
+Stopped at: Completed 05-05-PLAN.md (Resource Fork and Execute)
 
 ---
 *Last updated: 2026-02-12*
