@@ -7,12 +7,14 @@ import { ConversationSearch } from './conversation-search';
 import { ConversationList } from './conversation-list';
 import { UserMenu } from '@/components/auth/user-menu';
 import { useState, useTransition } from 'react';
-import { X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Plus, BookMarked } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Conversation } from '@/lib/db/schema';
 import { createConversation } from '@/app/(chat)/actions';
 import { toast } from 'sonner';
 import { isRedirectError } from '@/lib/utils';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 /**
  * Main sidebar component with collapsible behavior
@@ -29,6 +31,7 @@ interface ConversationSidebarProps {
 export function ConversationSidebar({ conversations, userEmail }: ConversationSidebarProps) {
   const { isOpen, toggle, close } = useSidebarStore();
   const isMobile = useMobile();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>(conversations);
   const [isPending, startTransition] = useTransition();
@@ -106,6 +109,24 @@ export function ConversationSidebar({ conversations, userEmail }: ConversationSi
               onFilteredResults={setFilteredConversations}
               allConversations={conversations}
             />
+
+            {/* Resources Link */}
+            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
+              <Link
+                href="/resources"
+                onClick={handleClose}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                  pathname === '/resources'
+                    ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                )}
+              >
+                <BookMarked className="w-5 h-5" />
+                <span className="font-medium">Resources</span>
+              </Link>
+            </div>
+
             <div className="flex-1 overflow-hidden">
               <ConversationList conversations={filteredConversations} searchQuery={searchQuery} />
             </div>
@@ -166,6 +187,23 @@ export function ConversationSidebar({ conversations, userEmail }: ConversationSi
             onFilteredResults={setFilteredConversations}
             allConversations={conversations}
           />
+
+          {/* Resources Link */}
+          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
+            <Link
+              href="/resources"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                pathname === '/resources'
+                  ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+              )}
+            >
+              <BookMarked className="w-5 h-5" />
+              <span className="font-medium">Resources</span>
+            </Link>
+          </div>
+
           <div className="flex-1 overflow-hidden">
             <ConversationList conversations={filteredConversations} searchQuery={searchQuery} />
           </div>

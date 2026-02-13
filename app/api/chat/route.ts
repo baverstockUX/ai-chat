@@ -14,6 +14,8 @@ import { detectIntent } from '@/lib/ai/intent-classifier';
 import { extractContext } from '@/lib/ai/context-extractor';
 import { searchWeb } from '@/lib/integrations/search/duckduckgo';
 import type { AgentRequestMetadata } from '@/lib/types/agent';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 // Note: Using Node.js runtime (not Edge) because postgres library requires Node.js APIs
 // Edge Runtime doesn't support the postgres client used by Drizzle
@@ -75,18 +77,51 @@ export async function POST(req: Request) {
 
     // Detect search intent and fetch search results
     let searchContext = '';
-    if (
-      userMessageContent.toLowerCase().includes('search for') ||
-      userMessageContent.toLowerCase().includes('look up') ||
-      userMessageContent.toLowerCase().startsWith('search:')
-    ) {
-      // Extract search query
-      const searchMatch = userMessageContent.match(/search (?:for |up )?["']?([^"']+)["']?/i);
-      if (searchMatch) {
-        const searchQuery = searchMatch[1];
+    const lowerMessage = userMessageContent.toLowerCase();
+
+    // Check for search keywords
+    const shouldSearch =
+      lowerMessage.includes('search for') ||
+      lowerMessage.includes('search ') ||
+      lowerMessage.includes('look up') ||
+      lowerMessage.includes('find information about') ||
+      lowerMessage.startsWith('search:');
+
+    if (shouldSearch) {
+      console.log('[Chat API] Search keywords detected in message:', userMessageContent);
+
+      // Extract search query - try multiple patterns
+      let searchQuery: string | null = null;
+
+      // Pattern 1: "search for X" or "search X"
+      let match = userMessageContent.match(/search\s+(?:for\s+)?(.+?)(?:\?|$)/i);
+      if (match) {
+        searchQuery = match[1].trim();
+      }
+
+      // Pattern 2: "look up X"
+      if (!searchQuery) {
+        match = userMessageContent.match(/look\s+up\s+(.+?)(?:\?|$)/i);
+        if (match) {
+          searchQuery = match[1].trim();
+        }
+      }
+
+      // Pattern 3: "find information about X"
+      if (!searchQuery) {
+        match = userMessageContent.match(/find\s+information\s+about\s+(.+?)(?:\?|$)/i);
+        if (match) {
+          searchQuery = match[1].trim();
+        }
+      }
+
+      if (searchQuery) {
+        console.log('[Chat API] Extracted search query:', searchQuery);
 
         try {
+          console.log('[Chat API] Calling searchWeb...');
           const results = await searchWeb(searchQuery);
+          console.log(`[Chat API] Search returned ${results.length} results`);
 
           // Format results for AI context injection
           searchContext = results.length > 0
@@ -95,8 +130,10 @@ export async function POST(req: Request) {
                 .join('\n\n')}`
             : `\n\nNo web search results found for "${searchQuery}"`;
         } catch (error) {
-          console.error('Search integration error:', error);
+          console.error('[Chat API] Search integration error:', error);
         }
+      } else {
+        console.log('[Chat API] Could not extract search query from message');
       }
     }
 
@@ -150,14 +187,29 @@ export async function POST(req: Request) {
 
     // For chat intent, continue with existing streamText flow
     // Build multimodal messages array if image is attached
+    // If imageUrl is provided, read and convert to base64
+    let imageBase64: string | undefined;
+    if (imageUrl) {
+      try {
+        // imageUrl is like "/uploads/images/filename.png"
+        // Convert to absolute file system path
+        const imagePath = join(process.cwd(), 'public', imageUrl);
+        const imageBuffer = await readFile(imagePath);
+        imageBase64 = imageBuffer.toString('base64');
+      } catch (error) {
+        console.error('Error reading image file:', error);
+        // Continue without image if file can't be read
+      }
+    }
+
     const aiMessages = messages.map((m: any) => {
       // If this is the latest message with an image attachment, use multimodal format
-      if (m === userMessage && imageUrl) {
+      if (m === userMessage && imageBase64) {
         return {
           role: m.role,
           content: [
             { type: 'text', text: m.content },
-            { type: 'image', image: imageUrl }
+            { type: 'image', image: imageBase64 }
           ]
         };
       }

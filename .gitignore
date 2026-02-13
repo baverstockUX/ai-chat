@@ -40,3 +40,6 @@ drizzle/
 public/uploads/*
 !public/uploads/.gitkeep
 !public/uploads/images/.gitkeep
+
+# Agent execution workspace
+agent-workspace/

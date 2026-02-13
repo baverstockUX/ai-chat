@@ -43,7 +43,7 @@ interface ChatInterfaceProps {
  * - Mobile header with menu button (opens sidebar)
  */
 export function ChatInterface({
-  conversationId,
+  conversationId: initialConversationId,
   initialMessages = [],
   conversationTitle = 'New Conversation',
   initialPrompt,
@@ -51,6 +51,8 @@ export function ChatInterface({
   const router = useRouter();
   const isMobile = useMobile();
   const { toggle: toggleSidebar } = useSidebarStore();
+  const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
+  const isNewConversation = !initialConversationId; // Track if we started without an ID
   const [messages, setMessages] = useState<ExtendedMessage[]>(
     initialMessages.map((msg) => ({
       id: msg.id,
@@ -130,6 +132,7 @@ export function ChatInterface({
           const newConversationId = response.headers.get('X-Conversation-Id');
           if (newConversationId) {
             newConversationIdRef.current = newConversationId;
+            setConversationId(newConversationId); // Update state so handlers work
             // Don't redirect yet - wait for response to complete
           }
         }
@@ -152,7 +155,7 @@ export function ChatInterface({
           }
 
           // Redirect after agent request if new conversation
-          if (!conversationId && newConversationIdRef.current) {
+          if (isNewConversation && newConversationIdRef.current) {
             window.history.replaceState(null, '', `/${newConversationIdRef.current}`);
             newConversationIdRef.current = null;
           }
@@ -231,7 +234,7 @@ export function ChatInterface({
         // without triggering a full navigation/remount. This avoids the race
         // condition where router.push would re-fetch from the DB before the
         // onFinish callback has persisted the messages.
-        if (!conversationId && newConversationIdRef.current) {
+        if (isNewConversation && newConversationIdRef.current) {
           window.history.replaceState(null, '', `/${newConversationIdRef.current}`);
           newConversationIdRef.current = null;
         }
@@ -354,6 +357,21 @@ export function ChatInterface({
             try {
               const update = JSON.parse(jsonPart);
               updates.push(update);
+
+              // Handle resource saved event
+              if (update.type === 'resource_saved') {
+                const toastId = toast.success(
+                  `Saved to Resources: ${update.resourceName}`,
+                  {
+                    duration: 10000,
+                    action: {
+                      label: 'View',
+                      onClick: () => router.push('/resources'),
+                    },
+                  }
+                );
+                continue; // Don't add to content display
+              }
 
               // Build content from updates
               let content = '';

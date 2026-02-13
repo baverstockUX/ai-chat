@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { ShareDialog } from './share-dialog';
 import { ForkDialog } from './fork-dialog';
+import { EditResourceDialog } from './edit-resource-dialog';
 import { executeResource } from '@/app/(chat)/actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -19,6 +20,7 @@ interface ResourceCardProps {
 export function ResourceCard({ resource, onUpdate }: ResourceCardProps) {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [forkDialogOpen, setForkDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const router = useRouter();
 
   const handleExecute = async () => {
@@ -82,6 +84,9 @@ export function ResourceCard({ resource, onUpdate }: ResourceCardProps) {
           <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)}>
             Share
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
+            Edit
+          </Button>
           {!resource.parentResourceId && (
             <Button variant="outline" size="sm" onClick={() => setForkDialogOpen(true)}>
               Fork
@@ -98,6 +103,13 @@ export function ResourceCard({ resource, onUpdate }: ResourceCardProps) {
         resourceName={resource.name}
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
+      />
+
+      <EditResourceDialog
+        resource={resource}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onUpdate={onUpdate}
       />
 
       <ForkDialog
