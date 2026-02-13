@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb, integer, unique } from 'drizzle-orm/pg-core';
 
 /**
  * User table - stores user authentication and profile information
@@ -50,17 +50,25 @@ export const message = pgTable('message', {
  * Enables domain adaptation, preference learning, and project context persistence
  * Supports ORCH-06 (Cross-session Context Memory) and ORCH-07 (Domain Adaptation)
  */
-export const conversationContext = pgTable('conversation_context', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  conversationId: uuid('conversation_id')
-    .notNull()
-    .references(() => conversation.id, { onDelete: 'cascade' }),
-  contextType: varchar('context_type', { length: 50 }).notNull(),
-  contextKey: varchar('context_key', { length: 255 }).notNull(),
-  contextValue: jsonb('context_value').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const conversationContext = pgTable(
+  'conversation_context',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversation.id, { onDelete: 'cascade' }),
+    contextType: varchar('context_type', { length: 50 }).notNull(),
+    contextKey: varchar('context_key', { length: 255 }).notNull(),
+    contextValue: jsonb('context_value').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    // Unique constraint on (conversationId, contextKey) to prevent duplicate context entries
+    // Required for upsert operations (INSERT ... ON CONFLICT DO UPDATE)
+    uniqueConversationContext: unique().on(table.conversationId, table.contextKey),
+  })
+);
 
 /**
  * Resource table - stores reusable agent workflows, prompts, and agent configurations

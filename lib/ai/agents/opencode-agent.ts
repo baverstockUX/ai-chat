@@ -153,15 +153,11 @@ export async function* executeOpencodeAgent(
           const event = JSON.parse(line);
 
           // Transform opencode JSON events to AgentProgressUpdate
-          const update: AgentProgressUpdate = {
-            type: mapEventType(event.type),
-            timestamp: event.timestamp || Date.now(),
-            content: event.content || event.message || '',
-            toolName: event.tool || event.toolName,
-            success: event.success,
-          };
+          const update = parseOpencodeEvent(event);
 
-          yield update;
+          if (update) {
+            yield update;
+          }
         } catch (parseError) {
           // Treat non-JSON output as plain text instead of just logging
           console.warn('[opencode-agent] Non-JSON output, treating as plain text:', line);
@@ -243,18 +239,94 @@ function mapEventType(
   switch (eventType) {
     case 'tool_call':
     case 'tool-call':
+    case 'tool_use':
       return 'tool_call';
     case 'tool_result':
     case 'tool-result':
       return 'tool_result';
     case 'complete':
     case 'completion':
+    case 'step_finish':
       return 'complete';
     case 'text':
     case 'progress':
     case 'message':
+    case 'step_start':
     default:
       return 'text';
+  }
+}
+
+/**
+ * Parse opencode JSON event into AgentProgressUpdate
+ * Opencode events have structure: { type, timestamp, part: {...} }
+ */
+function parseOpencodeEvent(event: any): AgentProgressUpdate | null {
+  const eventType = event.type;
+  const timestamp = event.timestamp || Date.now();
+  const part = event.part || {};
+
+  switch (eventType) {
+    case 'step_start':
+      return {
+        type: 'text',
+        timestamp,
+        content: 'Starting new step...',
+      };
+
+    case 'tool_use': {
+      const toolName = part.tool || 'unknown';
+      const state = part.state || {};
+      const input = state.input || {};
+      const output = state.output || '';
+      const description = input.description || input.command || '';
+      const status = state.status || '';
+
+      // For completed tool calls, show the result
+      if (status === 'completed') {
+        return {
+          type: 'tool_result',
+          timestamp,
+          content: output || 'Tool completed successfully',
+          toolName,
+          success: true,
+        };
+      }
+
+      // For in-progress tool calls, show the description
+      return {
+        type: 'tool_call',
+        timestamp,
+        content: description || `Calling ${toolName}`,
+        toolName,
+      };
+    }
+
+    case 'text':
+      return {
+        type: 'text',
+        timestamp,
+        content: part.text || '',
+      };
+
+    case 'step_finish': {
+      const reason = part.reason || 'unknown';
+      const cost = part.cost || 0;
+
+      if (reason === 'stop') {
+        return {
+          type: 'complete',
+          timestamp,
+          content: `Task completed (cost: $${cost.toFixed(4)})`,
+          success: true,
+        };
+      }
+
+      return null; // Don't show intermediate step finishes
+    }
+
+    default:
+      return null; // Ignore unknown event types
   }
 }
 
